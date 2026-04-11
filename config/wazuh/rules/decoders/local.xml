@@ -1,0 +1,36 @@
+<!-- ============================================================
+     SOC Platform - Wazuh Custom Log Decoders
+     Location: /var/ossec/etc/decoders/local_decoders.xml
+     ============================================================ -->
+
+<decoder_list>
+
+  <!-- ── SOC Docker Event Decoder ─────────────────────────── -->
+  <decoder name="soc-docker-event">
+    <prematch>^\{"status":</prematch>
+    <plugin_decoder>JSON_Decoder</plugin_decoder>
+  </decoder>
+
+  <!-- ── SOC Application Log Decoder ─────────────────────── -->
+  <decoder name="soc-app-log">
+    <prematch>^SOC_APP</prematch>
+    <regex>^SOC_APP \[(\w+)\] (\S+) (\S+): (.+)$</regex>
+    <order>level, timestamp, module, message</order>
+  </decoder>
+
+  <!-- ── SOC Alerting Service Decoder ─────────────────────── -->
+  <decoder name="soc-alerting">
+    <prematch>^ALERT\|</prematch>
+    <regex>^ALERT\|(\w+)\|(\S+)\|(\d+\.\d+\.\d+\.\d+)\|(.+)$</regex>
+    <order>alert_type, timestamp, srcip, description</order>
+  </decoder>
+
+  <!-- ── Nginx Access Log Decoder ──────────────────────────── -->
+  <decoder name="soc-nginx-access">
+    <program_name>nginx</program_name>
+    <prematch>^\d+\.\d+\.\d+\.\d+ </prematch>
+    <regex>^(\d+\.\d+\.\d+\.\d+) - (\S+) \[(\S+ \S+)\] "(\w+) (\S+) \S+" (\d+) (\d+)</regex>
+    <order>srcip, srcuser, timestamp, method, url, status_code, size</order>
+  </decoder>
+
+</decoder_list>

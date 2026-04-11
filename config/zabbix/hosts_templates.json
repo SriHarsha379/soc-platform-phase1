@@ -1,0 +1,160 @@
+{
+  "host_groups": [
+    {
+      "name": "SOC-Monitored-Servers",
+      "description": "All servers monitored by the SOC platform"
+    },
+    {
+      "name": "SOC-Linux-Servers",
+      "description": "Linux-based servers in the SOC environment"
+    },
+    {
+      "name": "SOC-Network-Devices",
+      "description": "Network devices monitored by Zabbix"
+    },
+    {
+      "name": "SOC-Platform-Components",
+      "description": "Internal SOC platform services (Wazuh, ES, Kibana)"
+    }
+  ],
+  "templates": [
+    {
+      "name": "SOC-Linux-System-Monitoring",
+      "description": "Comprehensive Linux system monitoring for SOC",
+      "items": [
+        {
+          "name": "CPU utilization",
+          "key": "system.cpu.util[,idle]",
+          "type": "Zabbix agent",
+          "value_type": "Float",
+          "units": "%",
+          "delay": "60s",
+          "history": "7d",
+          "trends": "365d"
+        },
+        {
+          "name": "Memory usage",
+          "key": "vm.memory.size[pavailable]",
+          "type": "Zabbix agent",
+          "value_type": "Float",
+          "units": "%",
+          "delay": "60s",
+          "history": "7d",
+          "trends": "365d"
+        },
+        {
+          "name": "Disk space usage /",
+          "key": "vfs.fs.size[/,pused]",
+          "type": "Zabbix agent",
+          "value_type": "Float",
+          "units": "%",
+          "delay": "60s",
+          "history": "7d",
+          "trends": "365d"
+        },
+        {
+          "name": "Network in (eth0)",
+          "key": "net.if.in[eth0]",
+          "type": "Zabbix agent",
+          "value_type": "Float",
+          "units": "bps",
+          "delay": "60s",
+          "history": "7d",
+          "trends": "365d"
+        },
+        {
+          "name": "Network out (eth0)",
+          "key": "net.if.out[eth0]",
+          "type": "Zabbix agent",
+          "value_type": "Float",
+          "units": "bps",
+          "delay": "60s",
+          "history": "7d",
+          "trends": "365d"
+        },
+        {
+          "name": "System load (1 min avg)",
+          "key": "system.cpu.load[all,avg1]",
+          "type": "Zabbix agent",
+          "value_type": "Float",
+          "delay": "60s",
+          "history": "7d",
+          "trends": "365d"
+        },
+        {
+          "name": "Number of running processes",
+          "key": "proc.num[,,run]",
+          "type": "Zabbix agent",
+          "value_type": "Unsigned",
+          "delay": "60s",
+          "history": "7d",
+          "trends": "365d"
+        },
+        {
+          "name": "Host availability",
+          "key": "agent.ping",
+          "type": "Zabbix agent",
+          "value_type": "Unsigned",
+          "delay": "30s",
+          "history": "7d"
+        }
+      ],
+      "triggers": [
+        {
+          "name": "High CPU utilization (>{$CPU.UTIL.CRIT}%) on {HOST.NAME}",
+          "expression": "avg(/SOC-Linux-System-Monitoring/system.cpu.util[,idle],5m)<100-{$CPU.UTIL.CRIT}",
+          "severity": "High",
+          "description": "CPU utilization has exceeded the critical threshold for 5 minutes.",
+          "manual_close": true
+        },
+        {
+          "name": "High memory usage (>{$MEMORY.UTIL.MAX}%) on {HOST.NAME}",
+          "expression": "avg(/SOC-Linux-System-Monitoring/vm.memory.size[pavailable],5m)<100-{$MEMORY.UTIL.MAX}",
+          "severity": "Average",
+          "description": "Available memory is critically low.",
+          "manual_close": true
+        },
+        {
+          "name": "Disk space is critically low (used>{$VFS.FS.PUSED.MAX.CRIT}%) on {HOST.NAME}",
+          "expression": "last(/SOC-Linux-System-Monitoring/vfs.fs.size[/,pused])>{$VFS.FS.PUSED.MAX.CRIT}",
+          "severity": "High",
+          "description": "Disk space usage on / has exceeded the critical threshold.",
+          "manual_close": false
+        },
+        {
+          "name": "Host {HOST.NAME} is unreachable",
+          "expression": "nodata(/SOC-Linux-System-Monitoring/agent.ping,5m)=1",
+          "severity": "High",
+          "description": "Host is not responding to Zabbix agent checks.",
+          "manual_close": true
+        }
+      ],
+      "macros": [
+        { "macro": "{$CPU.UTIL.CRIT}", "value": "85" },
+        { "macro": "{$MEMORY.UTIL.MAX}", "value": "90" },
+        { "macro": "{$VFS.FS.PUSED.MAX.CRIT}", "value": "85" }
+      ]
+    }
+  ],
+  "hosts": [
+    {
+      "host": "soc-platform-host",
+      "name": "SOC Platform Host",
+      "groups": ["SOC-Platform-Components"],
+      "templates": ["SOC-Linux-System-Monitoring"],
+      "interfaces": [
+        {
+          "type": "Agent",
+          "ip": "zabbix-agent",
+          "dns": "zabbix-agent",
+          "port": "10050",
+          "useip": 0
+        }
+      ],
+      "macros": [
+        { "macro": "{$CPU.UTIL.CRIT}", "value": "85" },
+        { "macro": "{$MEMORY.UTIL.MAX}", "value": "90" }
+      ]
+    }
+  ]
+}

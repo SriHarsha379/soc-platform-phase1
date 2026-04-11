@@ -1,0 +1,150 @@
+<!-- ============================================================
+     SOC Platform - Wazuh Custom Security Rules
+     Location: /var/ossec/etc/rules/local_rules.xml
+     ============================================================ -->
+
+<group name="soc_custom,">
+
+  <!-- ── Failed Login Attempts ──────────────────────────────── -->
+  <!-- Alert on single SSH failed login -->
+  <rule id="100001" level="5">
+    <if_sid>5716</if_sid>
+    <description>SOC: SSH authentication failure detected.</description>
+    <group>authentication_failure,soc_ssh,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <!-- Alert on brute-force: 5+ failures in 2 minutes -->
+  <rule id="100002" level="10" frequency="5" timeframe="120">
+    <if_matched_sid>100001</if_matched_sid>
+    <same_source_ip />
+    <description>SOC: Possible SSH brute-force attack from $(srcip). Multiple authentication failures detected.</description>
+    <group>authentication_failures,brute_force,soc_high_priority,</group>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+  </rule>
+
+  <!-- Alert on 10+ failures (critical brute-force) -->
+  <rule id="100003" level="14" frequency="10" timeframe="120">
+    <if_matched_sid>100001</if_matched_sid>
+    <same_source_ip />
+    <description>SOC: CRITICAL - SSH brute-force attack in progress from $(srcip). Immediate action required.</description>
+    <group>authentication_failures,brute_force,soc_critical,</group>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+  </rule>
+
+  <!-- ── Unauthorized Access Attempts ──────────────────────── -->
+  <!-- Failed sudo attempt -->
+  <rule id="100010" level="7">
+    <if_sid>5402</if_sid>
+    <description>SOC: Failed sudo command attempt by user $(srcuser) on $(hostname).</description>
+    <group>syslog,sudo,soc_unauthorized,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <!-- Multiple failed sudo attempts -->
+  <rule id="100011" level="10" frequency="3" timeframe="300">
+    <if_matched_sid>100010</if_matched_sid>
+    <same_source_user />
+    <description>SOC: Multiple failed sudo attempts by $(srcuser) - possible privilege escalation attempt.</description>
+    <group>syslog,sudo,privilege_escalation,soc_high_priority,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <!-- Invalid user login attempt -->
+  <rule id="100012" level="6">
+    <if_sid>5710</if_sid>
+    <description>SOC: Login attempt using invalid/non-existent user $(srcuser) from $(srcip).</description>
+    <group>authentication_failure,invalid_user,soc_suspicious,</group>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+  </rule>
+
+  <!-- ── Suspicious Activity ────────────────────────────────── -->
+  <!-- Root login via SSH -->
+  <rule id="100020" level="9">
+    <if_sid>5715</if_sid>
+    <match>root</match>
+    <description>SOC: Root user logged in via SSH from $(srcip). Review immediately.</description>
+    <group>authentication_success,soc_suspicious,soc_high_priority,</group>
+    <mitre>
+      <id>T1078.003</id>
+    </mitre>
+  </rule>
+
+  <!-- New user created -->
+  <rule id="100021" level="8">
+    <if_sid>5901</if_sid>
+    <description>SOC: New user account created on $(hostname) by $(srcuser).</description>
+    <group>account_changes,soc_suspicious,</group>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+  </rule>
+
+  <!-- Firewall/iptables change detected -->
+  <rule id="100022" level="9">
+    <if_sid>4002</if_sid>
+    <match>iptables</match>
+    <description>SOC: Firewall rule modification detected on $(hostname).</description>
+    <group>firewall,soc_suspicious,soc_high_priority,</group>
+    <mitre>
+      <id>T1562.004</id>
+    </mitre>
+  </rule>
+
+  <!-- High-frequency port scanning detected -->
+  <rule id="100023" level="10">
+    <if_sid>4002</if_sid>
+    <match>port scan</match>
+    <description>SOC: Port scanning activity detected from $(srcip).</description>
+    <group>network,port_scan,soc_suspicious,soc_high_priority,</group>
+    <mitre>
+      <id>T1046</id>
+    </mitre>
+  </rule>
+
+  <!-- ── File Integrity Monitoring Alerts ──────────────────── -->
+  <!-- Critical file modified -->
+  <rule id="100030" level="10">
+    <if_sid>550</if_sid>
+    <match>/etc/passwd</match>
+    <description>SOC: Critical file /etc/passwd has been modified on $(hostname).</description>
+    <group>syscheck,soc_fim,soc_critical,</group>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+  </rule>
+
+  <rule id="100031" level="10">
+    <if_sid>550</if_sid>
+    <match>/etc/shadow</match>
+    <description>SOC: Critical file /etc/shadow has been modified on $(hostname).</description>
+    <group>syscheck,soc_fim,soc_critical,</group>
+    <mitre>
+      <id>T1003.008</id>
+    </mitre>
+  </rule>
+
+  <!-- ── Docker / Container Events ─────────────────────────── -->
+  <rule id="100040" level="5">
+    <decoded_as>json</decoded_as>
+    <field name="status">start|stop|die|kill</field>
+    <description>SOC: Docker container event: $(status) on container $(name).</description>
+    <group>docker,soc_container,</group>
+    <mitre>
+      <id>T1610</id>
+    </mitre>
+  </rule>
+
+</group>

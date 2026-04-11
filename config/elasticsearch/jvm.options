@@ -1,0 +1,29 @@
+## ============================================================
+## Elasticsearch JVM Options - SOC Platform Phase 1
+## Location: /usr/share/elasticsearch/config/jvm.options.d/custom.options
+## ============================================================
+
+## Heap size (set to 50% of available RAM, max 32g)
+## For MVP/development: 512m-1g is sufficient
+-Xms512m
+-Xmx512m
+
+## GC configuration
+-XX:+UseG1GC
+-XX:G1ReservePercent=25
+-XX:InitiatingHeapOccupancyPercent=30
+
+## Temporary directory
+-Djava.io.tmpdir=${ES_TMPDIR}
+
+## Fatal error log
+-XX:ErrorFile=logs/hs_err_pid%p.log
+
+## JVM flags for GC logging (Java 9+)
+-Xlog:gc*,gc+age=trace,safepoint:file=logs/gc.log:utctime,pid,tags:filecount=32,filesize=64m
+
+## DNS TTL
+-Dnetworkaddress.cache.ttl=60
+
+## Disable GC overhead warning
+-XX:-HeapDumpOnOutOfMemoryError

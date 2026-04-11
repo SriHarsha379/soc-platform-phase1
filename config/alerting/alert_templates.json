@@ -1,0 +1,39 @@
+{
+  "templates": {
+    "high_cpu": {
+      "subject": "[SOC ALERT] High CPU Usage on {hostname}",
+      "severity": "high",
+      "body": "SOC Platform Alert\n==================\n\nSeverity: HIGH\nAlert Type: High CPU Utilization\nHost: {hostname}\nTimestamp: {timestamp}\n\nDetails:\n  Current CPU Usage: {cpu_percent}%\n  Threshold: {threshold}%\n  Duration: {duration_minutes} minutes\n\nRecommended Actions:\n  1. Check top/htop for resource-intensive processes\n  2. Review application logs for errors\n  3. Consider scaling resources if load is sustained\n\nDashboard: http://localhost:5601\nZabbix: http://localhost:8080\n\n--\nSOC Platform Phase 1 | Automated Alert"
+    },
+    "high_memory": {
+      "subject": "[SOC ALERT] High Memory Usage on {hostname}",
+      "severity": "high",
+      "body": "SOC Platform Alert\n==================\n\nSeverity: HIGH\nAlert Type: High Memory Utilization\nHost: {hostname}\nTimestamp: {timestamp}\n\nDetails:\n  Memory Used: {memory_used_gb}GB / {memory_total_gb}GB\n  Usage Percent: {memory_percent}%\n  Threshold: {threshold}%\n  Available: {memory_available_gb}GB\n\nRecommended Actions:\n  1. Identify memory-intensive processes with 'ps aux --sort=-%mem'\n  2. Check for memory leaks in applications\n  3. Review swap usage\n\nDashboard: http://localhost:5601\nZabbix: http://localhost:8080\n\n--\nSOC Platform Phase 1 | Automated Alert"
+    },
+    "disk_critical": {
+      "subject": "[SOC ALERT] Critical Disk Space on {hostname}:{mount_point}",
+      "severity": "critical",
+      "body": "SOC Platform Alert\n==================\n\nSeverity: CRITICAL\nAlert Type: Critical Disk Space\nHost: {hostname}\nMount Point: {mount_point}\nTimestamp: {timestamp}\n\nDetails:\n  Used: {disk_used_gb}GB / {disk_total_gb}GB\n  Usage Percent: {disk_percent}%\n  Threshold: {threshold}%\n  Available: {disk_available_gb}GB\n\nRecommended Actions:\n  1. Identify large files: find {mount_point} -size +100M -type f\n  2. Clear old logs: journalctl --vacuum-size=500M\n  3. Archive or delete unnecessary data immediately\n\nDashboard: http://localhost:5601\nZabbix: http://localhost:8080\n\n--\nSOC Platform Phase 1 | Automated Alert"
+    },
+    "host_down": {
+      "subject": "[SOC ALERT] Host Unreachable: {hostname}",
+      "severity": "critical",
+      "body": "SOC Platform Alert\n==================\n\nSeverity: CRITICAL\nAlert Type: Host Unreachable\nHost: {hostname}\nIP Address: {ip_address}\nTimestamp: {timestamp}\n\nDetails:\n  Last Seen: {last_seen}\n  Duration Down: {down_duration}\n  Check Type: {check_type}\n\nRecommended Actions:\n  1. Verify physical/VM power state\n  2. Check network connectivity\n  3. Review system logs if accessible\n  4. Escalate to on-call engineer if unresolved in 10 minutes\n\nDashboard: http://localhost:5601\nZabbix: http://localhost:8080\n\n--\nSOC Platform Phase 1 | Automated Alert"
+    },
+    "failed_logins": {
+      "subject": "[SOC SECURITY ALERT] Brute-Force Detected from {source_ip}",
+      "severity": "critical",
+      "body": "SOC Platform Security Alert\n===========================\n\nSeverity: CRITICAL\nAlert Type: SSH Brute-Force Attack Detected\nTarget Host: {hostname}\nSource IP: {source_ip}\nTimestamp: {timestamp}\n\nDetails:\n  Failed Attempts: {attempt_count} in {timeframe} minutes\n  Threshold: {threshold} attempts\n  Targeted User: {targeted_user}\n  Protocol: {protocol}\n\nMITRE ATT&CK: T1110.001 (Brute Force: Password Guessing)\n\nRecommended Actions:\n  1. Block source IP immediately: iptables -A INPUT -s {source_ip} -j DROP\n  2. Review /var/log/auth.log for additional details\n  3. Verify no successful logins from this IP\n  4. Consider adding to firewall blocklist\n  5. Notify affected user to change credentials\n\nKibana Dashboard: http://localhost:5601\nWazuh Manager: http://localhost:55000\n\n--\nSOC Platform Phase 1 | Automated Security Alert"
+    },
+    "unauthorized_access": {
+      "subject": "[SOC SECURITY ALERT] Unauthorized Access Attempt on {hostname}",
+      "severity": "high",
+      "body": "SOC Platform Security Alert\n===========================\n\nSeverity: HIGH\nAlert Type: Unauthorized Access Attempt\nHost: {hostname}\nTimestamp: {timestamp}\n\nDetails:\n  User: {username}\n  Action: {action}\n  Source IP: {source_ip}\n  Rule ID: {rule_id}\n  Rule Description: {rule_description}\n\nMITRE ATT&CK: {mitre_id}\n\nRecommended Actions:\n  1. Review user activity: last {username}\n  2. Check for privilege escalation attempts\n  3. Audit sudo logs: grep {username} /var/log/auth.log\n  4. Consider locking account if suspicious: passwd -l {username}\n\nKibana Dashboard: http://localhost:5601\n\n--\nSOC Platform Phase 1 | Automated Security Alert"
+    },
+    "recovery": {
+      "subject": "[SOC RECOVERY] Alert Resolved: {alert_type} on {hostname}",
+      "severity": "info",
+      "body": "SOC Platform Recovery Notice\n============================\n\nSeverity: INFO (RESOLVED)\nAlert Type: {alert_type}\nHost: {hostname}\nTimestamp: {timestamp}\n\nResolution Details:\n  Alert Started: {alert_start_time}\n  Alert Resolved: {timestamp}\n  Duration: {duration}\n  Current Value: {current_value}\n  Normal Threshold: {threshold}\n\nNo further action required.\n\nDashboard: http://localhost:5601\n\n--\nSOC Platform Phase 1 | Automated Alert"
+    }
+  }
+}

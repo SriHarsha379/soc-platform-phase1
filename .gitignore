@@ -1,0 +1,47 @@
+# SOC Platform Phase 1 - .gitignore
+
+# Environment (contains secrets)
+.env
+
+# Terraform state
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfplan
+
+# Certificates (generated locally)
+config/certs/
+*.pem
+*.key
+*.crt
+*.csr
+
+# Backups
+backups/
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+alerting/__pycache__/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker compose override
+docker-compose.override.yml

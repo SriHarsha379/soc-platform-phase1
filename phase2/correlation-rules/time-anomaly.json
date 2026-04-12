@@ -1,0 +1,75 @@
+{
+  "id": "time-anomaly",
+  "name": "Time-Based Access Anomaly",
+  "description": "Detects access patterns outside normal business hours (09:00-18:00 Mon-Fri UTC) or on weekends",
+  "severity": "medium",
+  "mitre": {
+    "tactic": "Initial Access",
+    "technique": "T1078",
+    "subtechnique": "T1078.004"
+  },
+  "detection": {
+    "type": "time_window",
+    "index_patterns": ["logs-auth-*", "wazuh-alerts-*"],
+    "query": {
+      "bool": {
+        "must": [
+          { "match": { "event.outcome": "success" } },
+          { "match": { "event.category": "authentication" } }
+        ]
+      }
+    },
+    "schedule": {
+      "timezone": "UTC",
+      "business_hours_start": "09:00",
+      "business_hours_end": "18:00",
+      "business_days": [1, 2, 3, 4, 5],
+      "alert_outside_business_hours": true,
+      "alert_on_weekends": true
+    },
+    "threshold": {
+      "min_off_hours_events": 1,
+      "time_window": "24h"
+    }
+  },
+  "wazuh_rule_ids": [100300, 100301, 100302],
+  "alert_output": {
+    "tag": "off-hours-access-detected",
+    "severity": "medium",
+    "actions": ["notify_soc", "create_ticket"],
+    "dedup_key": "user.name",
+    "dedup_window": "4h",
+    "include_in_alert": [
+      "user.name",
+      "host.name",
+      "source.ip",
+      "source.geo.country_name",
+      "@timestamp",
+      "local_time",
+      "day_of_week"
+    ]
+  },
+  "severity_escalation": {
+    "escalate_to": "high",
+    "conditions": [
+      "User has never logged in outside business hours before",
+      "Login from new/unknown source IP",
+      "Followed by privilege escalation",
+      "Followed by sensitive file access"
+    ]
+  },
+  "false_positive_guidance": [
+    "On-call engineers responding to alerts",
+    "Employees in different time zones",
+    "Scheduled automation running under user accounts",
+    "Executives/management with irregular hours"
+  ],
+  "remediation_steps": [
+    "1. Verify with the user if access was intentional",
+    "2. Check if user is in a different timezone",
+    "3. Review what actions were taken during off-hours session",
+    "4. If unauthorized: initiate account compromise investigation",
+    "5. Consider implementing MFA for off-hours access",
+    "6. Update user baseline profile if regular off-hours work is expected"
+  ]
+}

@@ -1,0 +1,103 @@
+<!--
+  severity-rules.xml - Phase 2 Severity Classification Rules
+  SOC Platform - Data Analytics & Log Correlation Layer
+
+  Maps Wazuh rule levels to SOC severity model:
+    Level 1-6:  Low      (informational, no immediate action)
+    Level 7-9:  Medium   (investigate within 4 hours)
+    Level 10-12: High    (investigate within 1 hour)
+    Level 13-15: Critical (immediate response)
+  Rule ID range: 100600-100699
+-->
+
+<group name="soc-severity,">
+
+  <!-- ================================================================
+       CRITICAL SEVERITY (Level 13-15) → tag: soc-critical
+       ================================================================ -->
+
+  <rule id="100600" level="0">
+    <if_level>13</if_level>
+    <description>SOC Severity: CRITICAL - Immediate escalation required</description>
+    <group>soc-critical,severity-classified,</group>
+    <options>alert_by_email</options>
+  </rule>
+
+  <!-- ================================================================
+       HIGH SEVERITY (Level 10-12) → tag: soc-high
+       ================================================================ -->
+
+  <rule id="100610" level="0">
+    <if_level>10</if_level>
+    <description>SOC Severity: HIGH - Investigate within 1 hour</description>
+    <group>soc-high,severity-classified,</group>
+  </rule>
+
+  <!-- ================================================================
+       MEDIUM SEVERITY (Level 7-9) → tag: soc-medium
+       ================================================================ -->
+
+  <rule id="100620" level="0">
+    <if_level>7</if_level>
+    <description>SOC Severity: MEDIUM - Investigate within 4 hours</description>
+    <group>soc-medium,severity-classified,</group>
+  </rule>
+
+  <!-- ================================================================
+       LOW SEVERITY (Level 3-6) → tag: soc-low
+       ================================================================ -->
+
+  <rule id="100630" level="0">
+    <if_level>3</if_level>
+    <description>SOC Severity: LOW - Log for audit and trend analysis</description>
+    <group>soc-low,severity-classified,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- ================================================================
+       COMPLIANCE TAGGING (PCI-DSS, HIPAA, GDPR)
+       ================================================================ -->
+
+  <rule id="100640" level="0">
+    <if_group>authentication_failures,</if_group>
+    <description>Compliance: Authentication failure - PCI-DSS 10.2.4, HIPAA 164.312(d)</description>
+    <group>compliance-pci-dss,compliance-hipaa,severity-classified,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <rule id="100641" level="0">
+    <if_group>privilege-escalation,</if_group>
+    <description>Compliance: Privilege escalation - PCI-DSS 10.2.5.b, SOX</description>
+    <group>compliance-pci-dss,compliance-sox,severity-classified,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <rule id="100642" level="0">
+    <if_group>syscheck,</if_group>
+    <description>Compliance: File integrity change - PCI-DSS 11.5, HIPAA 164.312(c)(2)</description>
+    <group>compliance-pci-dss,compliance-hipaa,file-integrity,severity-classified,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- ================================================================
+       ALERT FATIGUE REDUCTION
+       ================================================================ -->
+
+  <!-- Suppress low-value repeated events to reduce noise -->
+  <rule id="100650" level="0" frequency="20" timeframe="3600">
+    <if_matched_group>soc-low,</if_matched_group>
+    <same_source_ip />
+    <description>Noise Reduction: Repeated low-severity events from same IP - suppressing</description>
+    <group>noise-suppressed,dedup,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- Promote medium → high if sustained -->
+  <rule id="100651" level="11" frequency="10" timeframe="1800">
+    <if_matched_group>soc-medium,</if_matched_group>
+    <same_source_ip />
+    <description>Severity Escalation: 10+ medium alerts from same IP in 30 min - escalating to HIGH</description>
+    <group>soc-high,severity-escalated,soc-alert,</group>
+  </rule>
+
+</group>

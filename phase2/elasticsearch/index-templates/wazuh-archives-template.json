@@ -1,0 +1,93 @@
+{
+  "index_patterns": ["wazuh-archives-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "number_of_shards": 5,
+      "number_of_replicas": 1,
+      "index.lifecycle.name": "wazuh-ilm-policy",
+      "index.lifecycle.rollover_alias": "wazuh-archives",
+      "index.refresh_interval": "30s",
+      "index.translog.durability": "async",
+      "index.translog.sync_interval": "30s",
+      "index.codec": "best_compression",
+      "index.mapping.total_fields.limit": 3000
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "agent": {
+          "properties": {
+            "id":      { "type": "keyword" },
+            "ip":      { "type": "ip" },
+            "name":    { "type": "keyword" },
+            "version": { "type": "keyword" }
+          }
+        },
+        "event": {
+          "properties": {
+            "action":   { "type": "keyword" },
+            "category": { "type": "keyword" },
+            "kind":     { "type": "keyword" },
+            "module":   { "type": "keyword" },
+            "outcome":  { "type": "keyword" },
+            "severity": { "type": "integer" },
+            "type":     { "type": "keyword" }
+          }
+        },
+        "host": {
+          "properties": {
+            "hostname": { "type": "keyword" },
+            "ip":       { "type": "ip", "ignore_malformed": true },
+            "name":     { "type": "keyword" },
+            "os": {
+              "properties": {
+                "family":   { "type": "keyword" },
+                "name":     { "type": "keyword" },
+                "platform": { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "rule": {
+          "properties": {
+            "description": { "type": "text", "analyzer": "english" },
+            "firedtimes":  { "type": "integer" },
+            "groups":      { "type": "keyword" },
+            "id":          { "type": "keyword" },
+            "level":       { "type": "integer" }
+          }
+        },
+        "source": {
+          "properties": {
+            "ip":   { "type": "ip", "ignore_malformed": true },
+            "port": { "type": "integer" }
+          }
+        },
+        "user": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
+        "tags": { "type": "keyword" },
+        "decoder": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
+        "full_log":  { "type": "text", "analyzer": "english" },
+        "location":  { "type": "keyword" }
+      }
+    }
+  },
+  "priority": 190,
+  "_meta": {
+    "description": "Wazuh archives full-log storage template - ECS compliant",
+    "phase": "phase2",
+    "version": "1.0.0"
+  }
+}

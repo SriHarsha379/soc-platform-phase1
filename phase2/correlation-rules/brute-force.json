@@ -1,0 +1,50 @@
+{
+  "id": "brute-force-detection",
+  "name": "SSH Brute Force Detection",
+  "description": "Detects brute force attacks: 5+ failed SSH login attempts from the same source IP within a 5-minute window",
+  "severity": "medium",
+  "mitre": {
+    "tactic": "Credential Access",
+    "technique": "T1110",
+    "subtechnique": "T1110.001"
+  },
+  "detection": {
+    "type": "threshold",
+    "index_patterns": ["wazuh-alerts-*", "logs-auth-*"],
+    "query": {
+      "bool": {
+        "must": [
+          { "match": { "event.outcome": "failure" } },
+          { "match": { "event.category": "authentication" } }
+        ]
+      }
+    },
+    "threshold": {
+      "field": "source.ip",
+      "value": 5,
+      "cardinality": [],
+      "time_window": "5m"
+    }
+  },
+  "wazuh_rule_ids": [100001, 100002, 100003, 100004, 100005],
+  "alert_output": {
+    "tag": "brute-force-detected",
+    "severity": "medium",
+    "actions": ["notify_soc", "create_ticket"],
+    "optional_response": "block_source_ip",
+    "dedup_key": "source.ip",
+    "dedup_window": "1h"
+  },
+  "false_positive_guidance": [
+    "Legitimate administrator forgotten password on management hosts",
+    "Automated scripts with incorrect credentials",
+    "Monitoring tools performing connectivity checks"
+  ],
+  "remediation_steps": [
+    "1. Check if source IP is internal (admin activity) or external (attack)",
+    "2. If external: add to firewall block list temporarily",
+    "3. Check if any subsequent login succeeded (see rule 100400)",
+    "4. Review targeted username(s) for privilege level",
+    "5. Document in ticketing system with evidence"
+  ]
+}

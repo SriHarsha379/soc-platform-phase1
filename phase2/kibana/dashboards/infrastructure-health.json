@@ -1,0 +1,62 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "soc-infrastructure-health-dashboard",
+      "type": "dashboard",
+      "attributes": {
+        "title": "Infrastructure Health",
+        "description": "System resource utilization trends, performance baselines, and anomaly highlights from Zabbix metrics",
+        "panelsJSON": "[{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":0,\"y\":0,\"w\":16,\"h\":8,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":16,\"y\":0,\"w\":16,\"h\":8,\"i\":\"2\"},\"panelIndex\":\"2\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":32,\"y\":0,\"w\":16,\"h\":8,\"i\":\"3\"},\"panelIndex\":\"3\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":0,\"y\":8,\"w\":24,\"h\":12,\"i\":\"4\"},\"panelIndex\":\"4\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":24,\"y\":8,\"w\":24,\"h\":12,\"i\":\"5\"},\"panelIndex\":\"5\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":0,\"y\":20,\"w\":48,\"h\":15,\"i\":\"6\"},\"panelIndex\":\"6\",\"embeddableConfig\":{}}]",
+        "optionsJSON": "{\"useMargins\":true,\"syncColors\":true,\"hidePanelTitles\":false}",
+        "timeRestore": true,
+        "timeTo": "now",
+        "timeFrom": "now-6h",
+        "refreshInterval": {
+          "pause": false,
+          "value": 60000
+        },
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[]}"
+        }
+      },
+      "references": []
+    },
+    {
+      "id": "soc-infra-index-pattern",
+      "type": "index-pattern",
+      "attributes": {
+        "title": "metrics-zabbix-*",
+        "timeFieldName": "@timestamp",
+        "fields": "[]"
+      },
+      "references": []
+    }
+  ],
+  "_meta": {
+    "description": "Infrastructure Health Dashboard - Phase 2",
+    "panels": [
+      "CPU utilization gauge/metric (avg across hosts)",
+      "Memory utilization gauge/metric",
+      "Disk utilization gauge/metric",
+      "CPU trend over time (line chart per host)",
+      "Memory trend over time (line chart per host)",
+      "Network I/O rates (bytes in/out per host)",
+      "Load average trend (1m, 5m, 15m)",
+      "Host comparison table (all metrics side by side)"
+    ],
+    "filters": [
+      "Time range picker",
+      "Host name filter",
+      "Metric type filter (cpu/memory/disk/network)"
+    ],
+    "thresholds": {
+      "cpu_warning": 80,
+      "cpu_critical": 95,
+      "memory_warning": 85,
+      "memory_critical": 95,
+      "disk_warning": 80,
+      "disk_critical": 90
+    }
+  }
+}

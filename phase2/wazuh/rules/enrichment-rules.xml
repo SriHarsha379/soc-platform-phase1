@@ -1,0 +1,130 @@
+<!--
+  enrichment-rules.xml - Phase 2 Alert Enrichment Rules
+  SOC Platform - Data Analytics & Log Correlation Layer
+
+  These rules add contextual labels to alerts for downstream analysis,
+  deduplication, and dashboard filtering.
+  Rule ID range: 100500-100599
+-->
+
+<group name="soc-enrichment,">
+
+  <!-- ================================================================
+       HOST CONTEXT ENRICHMENT
+       ================================================================ -->
+
+  <!-- Tag events from known high-value hosts -->
+  <rule id="100500" level="0">
+    <if_sid>0</if_sid>
+    <hostname>prod-|db-|vault-|key-</hostname>
+    <description>Enrichment: Event from high-value production host</description>
+    <group>high-value-target,enrichment,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- Tag events from DMZ hosts -->
+  <rule id="100501" level="0">
+    <if_sid>0</if_sid>
+    <hostname>dmz-|web-|proxy-|fw-</hostname>
+    <description>Enrichment: Event from DMZ/perimeter host</description>
+    <group>dmz-host,enrichment,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- ================================================================
+       USER CONTEXT ENRICHMENT
+       ================================================================ -->
+
+  <!-- Tag root/service account activity -->
+  <rule id="100510" level="5">
+    <if_sid>0</if_sid>
+    <user>root</user>
+    <description>Enrichment: Root user activity detected</description>
+    <group>root-activity,enrichment,privileged-user,</group>
+  </rule>
+
+  <!-- Tag service account activity -->
+  <rule id="100511" level="3">
+    <if_sid>0</if_sid>
+    <user>^svc-|^service-|^daemon$|^www-data$|^nobody$</user>
+    <description>Enrichment: Service account activity detected</description>
+    <group>service-account,enrichment,</group>
+  </rule>
+
+  <!-- ================================================================
+       SEVERITY ENRICHMENT (align with SOC severity model)
+       ================================================================ -->
+
+  <rule id="100520" level="0">
+    <if_sid>0</if_sid>
+    <group>critical-severity,</group>
+    <description>Enrichment: Critical severity event - immediate SOC response required</description>
+    <options>alert_by_email</options>
+  </rule>
+
+  <rule id="100521" level="0">
+    <if_sid>0</if_sid>
+    <group>high-severity,</group>
+    <description>Enrichment: High severity event - SOC investigation within 1 hour</description>
+  </rule>
+
+  <!-- ================================================================
+       GEO-LOCATION ENRICHMENT
+       ================================================================ -->
+
+  <!-- Flag logins from known threat countries (adjust list as needed) -->
+  <rule id="100530" level="9">
+    <if_sid>5715,5718</if_sid>
+    <srcgeoip>CN,RU,KP,IR</srcgeoip>
+    <description>Enrichment: Successful login from high-risk country</description>
+    <group>geo-risk,high-risk-country,soc-alert,enrichment,</group>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+  </rule>
+
+  <rule id="100531" level="6">
+    <if_sid>5710,5712</if_sid>
+    <srcgeoip>CN,RU,KP,IR</srcgeoip>
+    <description>Enrichment: Failed login attempt from high-risk country</description>
+    <group>geo-risk,high-risk-country,enrichment,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <!-- ================================================================
+       FREQUENCY ENRICHMENT
+       ================================================================ -->
+
+  <!-- First-time event from host in 24h -->
+  <rule id="100540" level="4" frequency="1" timeframe="86400">
+    <if_matched_group>authentication,</if_matched_group>
+    <same_source_ip />
+    <description>Enrichment: First authentication event from this source IP in 24 hours</description>
+    <group>first-occurrence,enrichment,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- ================================================================
+       ALERT DEDUPLICATION TAGS
+       ================================================================ -->
+
+  <!-- Group same-type alerts within 5 min window -->
+  <rule id="100550" level="0" frequency="3" timeframe="300">
+    <if_matched_group>brute-force,</if_matched_group>
+    <same_source_ip />
+    <description>Enrichment: Dedup tag - repeated brute force from same IP (suppress duplicate alerts)</description>
+    <group>dedup-brute-force,suppressed,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <rule id="100551" level="0" frequency="5" timeframe="300">
+    <if_matched_group>privilege-escalation,</if_matched_group>
+    <same_user />
+    <description>Enrichment: Dedup tag - multiple privilege escalation events same user</description>
+    <group>dedup-priv-esc,suppressed,</group>
+    <options>no_full_log</options>
+  </rule>
+
+</group>

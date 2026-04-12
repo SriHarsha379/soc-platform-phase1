@@ -1,0 +1,23 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "threat-severity-breakdown",
+      "type": "visualization",
+      "attributes": {
+        "title": "Threat Severity Breakdown",
+        "description": "Pie chart showing distribution of alerts by severity level (critical/high/medium/low)",
+        "visState": "{\"title\":\"Threat Severity Breakdown\",\"type\":\"pie\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":true,\"labels\":{\"show\":true,\"values\":true,\"last_level\":true,\"truncate\":100}},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"rule.groups\",\"include\":\"soc-critical|soc-high|soc-medium|soc-low\",\"size\":4,\"order\":\"desc\",\"orderBy\":\"1\"}}]}",
+        "uiStateJSON": "{}",
+        "description": "",
+        "savedSearchRefName": "search_0",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[],\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\"}"
+        }
+      },
+      "references": [
+        {"name": "kibanaSavedObjectMeta.searchSourceJSON.index", "type": "index-pattern", "id": "wazuh-alerts-*"}
+      ]
+    }
+  ]
+}

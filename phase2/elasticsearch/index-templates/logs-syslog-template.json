@@ -1,0 +1,84 @@
+{
+  "index_patterns": ["logs-syslog-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "index.lifecycle.name": "logs-ilm-policy",
+      "index.lifecycle.rollover_alias": "logs-syslog",
+      "index.refresh_interval": "10s",
+      "index.codec": "best_compression",
+      "index.mapping.total_fields.limit": 1000
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "event": {
+          "properties": {
+            "action":   { "type": "keyword" },
+            "category": { "type": "keyword" },
+            "dataset":  { "type": "keyword", "value": "syslog" },
+            "kind":     { "type": "keyword" },
+            "module":   { "type": "keyword" },
+            "outcome":  { "type": "keyword" },
+            "severity": { "type": "integer" },
+            "type":     { "type": "keyword" }
+          }
+        },
+        "host": {
+          "properties": {
+            "hostname": { "type": "keyword" },
+            "ip":       { "type": "ip", "ignore_malformed": true },
+            "name":     { "type": "keyword" },
+            "os": {
+              "properties": {
+                "family":   { "type": "keyword" },
+                "name":     { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "log": {
+          "properties": {
+            "facility": { "type": "keyword" },
+            "level":    { "type": "keyword" },
+            "syslog": {
+              "properties": {
+                "facility":  { "type": "integer" },
+                "priority":  { "type": "integer" },
+                "severity":  { "type": "integer" },
+                "procid":    { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "message": { "type": "text", "analyzer": "english" },
+        "process": {
+          "properties": {
+            "name":    { "type": "keyword" },
+            "pid":     { "type": "long" },
+            "program": { "type": "keyword" }
+          }
+        },
+        "user": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
+        "tags":     { "type": "keyword" },
+        "labels":   { "type": "object" }
+      }
+    }
+  },
+  "priority": 150,
+  "_meta": {
+    "description": "Syslog index template - ECS compliant",
+    "phase": "phase2",
+    "version": "1.0.0"
+  }
+}

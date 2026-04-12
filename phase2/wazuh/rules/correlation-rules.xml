@@ -1,0 +1,235 @@
+<!--
+  correlation-rules.xml - Phase 2 Wazuh Correlation Rules
+  SOC Platform - Data Analytics & Log Correlation Layer
+
+  Rule ID ranges:
+    100001-100099: Authentication correlation (brute force)
+    100100-100199: Privilege escalation
+    100200-100299: Network anomalies / data exfiltration
+    100300-100399: Time-based anomalies
+    100400-100499: Composite / chained alerts
+-->
+
+<group name="soc-correlation,">
+
+  <!-- ================================================================
+       BRUTE FORCE DETECTION (100001-100019)
+       Trigger: 5+ failed SSH logins from same source in 5 minutes
+       ================================================================ -->
+
+  <rule id="100010" level="10" frequency="5" timeframe="300">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_source_ip />
+    <description>Brute Force Attack: 5+ failed SSH logins from same IP in 5 minutes</description>
+    <group>brute-force,authentication_failures,soc-alert,</group>
+    <options>no_full_log</options>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <rule id="100011" level="10" frequency="5" timeframe="300">
+    <if_matched_sid>5712</if_matched_sid>
+    <same_source_ip />
+    <description>Brute Force Attack: 5+ failed logins for invalid users from same IP</description>
+    <group>brute-force,authentication_failures,soc-alert,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <rule id="100012" level="12" frequency="10" timeframe="120">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_source_ip />
+    <description>Brute Force Attack: 10+ failed logins in 2 minutes (high severity)</description>
+    <group>brute-force,authentication_failures,soc-alert,high-severity,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <rule id="100013" level="14" frequency="20" timeframe="60">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_source_ip />
+    <description>Brute Force Attack: 20+ failed logins in 1 minute (critical - likely automated)</description>
+    <group>brute-force,authentication_failures,soc-alert,critical-severity,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <rule id="100014" level="11" frequency="8" timeframe="300">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_user />
+    <description>Distributed Brute Force: Multiple source IPs targeting same user</description>
+    <group>brute-force,authentication_failures,distributed-attack,soc-alert,</group>
+    <mitre>
+      <id>T1110.003</id>
+    </mitre>
+  </rule>
+
+  <!-- ================================================================
+       PRIVILEGE ESCALATION (100100-100119)
+       Trigger: Successful sudo/su after failed auth attempts
+       ================================================================ -->
+
+  <rule id="100100" level="5">
+    <if_sid>5402</if_sid>
+    <description>Sudo command executed successfully</description>
+    <group>sudo,privilege-escalation-baseline,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100101" level="13" timeframe="60">
+    <if_matched_sid>5710</if_matched_sid>
+    <if_sid>100100</if_sid>
+    <same_user />
+    <description>Privilege Escalation: Sudo success immediately after failed SSH login (1 min window)</description>
+    <group>privilege-escalation,soc-alert,high-severity,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100102" level="10">
+    <if_sid>5401</if_sid>
+    <match>to root</match>
+    <description>Privilege Escalation: User switched to root via su</description>
+    <group>privilege-escalation,su-root,soc-alert,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100103" level="14" frequency="3" timeframe="300">
+    <if_matched_sid>5403</if_matched_sid>
+    <if_sid>100100</if_sid>
+    <same_user />
+    <description>Privilege Escalation: Sudo success after 3+ failed sudo attempts</description>
+    <group>privilege-escalation,soc-alert,high-severity,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100104" level="12">
+    <if_sid>100100</if_sid>
+    <regex>COMMAND=.*(/bin/bash|/bin/sh|/usr/bin/python|chmod|chown|passwd|visudo|useradd|usermod)</regex>
+    <description>Privilege Escalation: Sensitive command executed via sudo</description>
+    <group>privilege-escalation,suspicious-command,soc-alert,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <!-- ================================================================
+       NETWORK ANOMALIES (100200-100219)
+       Trigger: Large outbound transfers, unusual connections
+       ================================================================ -->
+
+  <rule id="100200" level="12">
+    <if_sid>40101,40102</if_sid>
+    <regex>bytes=\d{10,}</regex>
+    <description>Data Exfiltration Suspected: Large outbound transfer detected (over 1 GB)</description>
+    <group>data-exfiltration,network-anomaly,soc-alert,critical-severity,</group>
+    <mitre>
+      <id>T1048</id>
+    </mitre>
+  </rule>
+
+  <rule id="100201" level="10" frequency="50" timeframe="60">
+    <if_matched_sid>4112</if_matched_sid>
+    <same_source_ip />
+    <description>Port Scan Detected: 50+ connection attempts from single source in 1 minute</description>
+    <group>port-scan,network-anomaly,soc-alert,</group>
+    <mitre>
+      <id>T1046</id>
+    </mitre>
+  </rule>
+
+  <rule id="100202" level="9">
+    <if_sid>4112,4113</if_sid>
+    <match>BLOCKED</match>
+    <description>Suspicious Network Connection Blocked by Firewall</description>
+    <group>network-anomaly,firewall-block,</group>
+    <mitre>
+      <id>T1071</id>
+    </mitre>
+  </rule>
+
+  <!-- ================================================================
+       TIME-BASED ANOMALIES (100300-100319)
+       Trigger: Access outside business hours (09:00-18:00 Mon-Fri)
+       ================================================================ -->
+
+  <rule id="100300" level="7">
+    <if_sid>5715,5718</if_sid>
+    <time>18:00-09:00</time>
+    <description>Off-Hours Access: Successful login outside business hours (18:00-09:00)</description>
+    <group>time-anomaly,off-hours-access,soc-alert,</group>
+    <mitre>
+      <id>T1078.004</id>
+    </mitre>
+  </rule>
+
+  <rule id="100301" level="8">
+    <if_sid>5715,5718</if_sid>
+    <weekday>saturday,sunday</weekday>
+    <description>Weekend Access: Successful login on weekend day</description>
+    <group>time-anomaly,weekend-access,soc-alert,</group>
+    <mitre>
+      <id>T1078.004</id>
+    </mitre>
+  </rule>
+
+  <rule id="100302" level="10" frequency="3" timeframe="3600">
+    <if_matched_sid>100300,100301</if_matched_sid>
+    <same_user />
+    <description>Repeated Off-Hours Access: 3+ off-hours logins by same user in 1 hour</description>
+    <group>time-anomaly,off-hours-access,repeated,soc-alert,</group>
+    <mitre>
+      <id>T1078.004</id>
+    </mitre>
+  </rule>
+
+  <!-- ================================================================
+       COMPOSITE / CHAINED ALERTS (100400-100419)
+       Trigger: Multiple correlated events forming an attack chain
+       ================================================================ -->
+
+  <rule id="100400" level="15">
+    <if_matched_sid>100010,100012</if_matched_sid>
+    <if_sid>5715</if_sid>
+    <same_source_ip />
+    <description>CRITICAL: Brute Force Succeeded - Login after multiple failures from same IP</description>
+    <group>brute-force,account-compromise,soc-alert,critical-severity,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <rule id="100401" level="15">
+    <if_matched_sid>100400</if_matched_sid>
+    <if_sid>100101,100102</if_sid>
+    <same_user />
+    <description>CRITICAL: Attack Chain - Brute Force then Login then Privilege Escalation</description>
+    <group>attack-chain,account-compromise,privilege-escalation,soc-alert,critical-severity,</group>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+  <rule id="100402" level="14">
+    <if_matched_sid>100300</if_matched_sid>
+    <if_sid>100101</if_sid>
+    <same_user />
+    <description>HIGH: Off-Hours Login followed by Privilege Escalation</description>
+    <group>attack-chain,time-anomaly,privilege-escalation,soc-alert,high-severity,</group>
+    <mitre>
+      <id>T1078.004</id>
+    </mitre>
+  </rule>
+
+</group>

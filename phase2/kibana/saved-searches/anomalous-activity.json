@@ -1,0 +1,21 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "anomalous-activity-search",
+      "type": "search",
+      "attributes": {
+        "title": "Anomalous Activity",
+        "description": "Unusual patterns: off-hours access, geo-risk logins, impossible travel, data exfiltration indicators",
+        "columns": ["@timestamp", "host.name", "source.ip", "source.geo.country_name", "user.name", "rule.description", "rule.level", "rule.groups"],
+        "sort": [["@timestamp", "desc"]],
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"rule.groups:(\\\"time-anomaly\\\" OR \\\"geo-risk\\\" OR \\\"impossible-travel-detected\\\" OR \\\"data-exfiltration-suspected\\\" OR \\\"off-hours-access\\\")\"},\"filter\":[],\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\"}"
+        }
+      },
+      "references": [
+        {"name": "kibanaSavedObjectMeta.searchSourceJSON.index", "type": "index-pattern", "id": "wazuh-alerts-*"}
+      ]
+    }
+  ]
+}

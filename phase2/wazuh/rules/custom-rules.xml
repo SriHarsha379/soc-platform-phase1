@@ -1,0 +1,148 @@
+<!--
+  custom-rules.xml - Phase 2 Custom Security Rules
+  SOC Platform - Data Analytics & Log Correlation Layer
+
+  Custom rules for environment-specific security monitoring.
+  Rule ID range: 100700-100799
+-->
+
+<group name="soc-custom,">
+
+  <!-- ================================================================
+       SSH SECURITY (extended from Phase 1)
+       ================================================================ -->
+
+  <!-- Alert on SSH login with root account directly -->
+  <rule id="100700" level="10">
+    <if_sid>5715</if_sid>
+    <user>root</user>
+    <description>Security: Direct root SSH login detected (high risk)</description>
+    <group>root-ssh-login,authentication,soc-alert,high-severity,</group>
+    <mitre>
+      <id>T1078.003</id>
+    </mitre>
+  </rule>
+
+  <!-- SSH key-based auth fallback to password -->
+  <rule id="100701" level="7">
+    <if_sid>5715</if_sid>
+    <match>password</match>
+    <description>Security: SSH password authentication used (key-based preferred)</description>
+    <group>ssh-password-auth,authentication,</group>
+  </rule>
+
+  <!-- ================================================================
+       FILE INTEGRITY MONITORING
+       ================================================================ -->
+
+  <!-- Critical config file modified -->
+  <rule id="100710" level="12">
+    <if_sid>550,554</if_sid>
+    <match>/etc/passwd|/etc/shadow|/etc/sudoers|/etc/ssh/sshd_config</match>
+    <description>Security: Critical system file modified - potential persistence</description>
+    <group>file-integrity,persistence,soc-alert,high-severity,</group>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+  </rule>
+
+  <!-- Web shell detection -->
+  <rule id="100711" level="14">
+    <if_sid>550,554</if_sid>
+    <match>/var/www|/srv/www|/usr/share/nginx</match>
+    <regex>\.php$|\.jsp$|\.aspx$|\.sh$</regex>
+    <description>Security: New executable file in web directory - possible web shell</description>
+    <group>web-shell,malware,soc-alert,critical-severity,</group>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+  </rule>
+
+  <!-- ================================================================
+       PROCESS MONITORING
+       ================================================================ -->
+
+  <!-- Suspicious process spawned -->
+  <rule id="100720" level="10">
+    <if_sid>0</if_sid>
+    <match>process</match>
+    <regex>(nc|ncat|netcat|nmap|masscan|socat|curl.*\|.*sh|wget.*\|.*sh)</regex>
+    <description>Security: Suspicious process execution detected</description>
+    <group>suspicious-process,malware,soc-alert,</group>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+  </rule>
+
+  <!-- Reverse shell indicators -->
+  <rule id="100721" level="14">
+    <if_sid>0</if_sid>
+    <regex>bash.*-i.*>&amp;|/dev/tcp/|/dev/udp/|python.*socket|perl.*socket</regex>
+    <description>Security: Possible reverse shell command detected</description>
+    <group>reverse-shell,malware,soc-alert,critical-severity,</group>
+    <mitre>
+      <id>T1059.004</id>
+    </mitre>
+  </rule>
+
+  <!-- ================================================================
+       DOCKER / CONTAINER SECURITY
+       ================================================================ -->
+
+  <rule id="100730" level="8">
+    <if_sid>0</if_sid>
+    <program_name>dockerd</program_name>
+    <match>privileged</match>
+    <description>Security: Privileged Docker container started</description>
+    <group>container-security,docker,soc-alert,</group>
+    <mitre>
+      <id>T1610</id>
+    </mitre>
+  </rule>
+
+  <rule id="100731" level="9">
+    <if_sid>0</if_sid>
+    <program_name>dockerd</program_name>
+    <regex>--net=host|--pid=host|--ipc=host</regex>
+    <description>Security: Container started with host namespace sharing</description>
+    <group>container-security,docker,soc-alert,</group>
+    <mitre>
+      <id>T1610</id>
+    </mitre>
+  </rule>
+
+  <!-- ================================================================
+       SERVICE AVAILABILITY
+       ================================================================ -->
+
+  <rule id="100740" level="9">
+    <if_sid>0</if_sid>
+    <match>connection refused|service unavailable|Failed to connect</match>
+    <program_name>elasticsearch|kibana|wazuh|zabbix</program_name>
+    <description>Availability: SOC platform service connection failure</description>
+    <group>service-availability,soc-platform-health,</group>
+  </rule>
+
+  <!-- ================================================================
+       ACCOUNT MANAGEMENT
+       ================================================================ -->
+
+  <rule id="100750" level="10">
+    <if_sid>5901,5902</if_sid>
+    <description>Security: New user account created</description>
+    <group>account-management,user-creation,soc-alert,</group>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+  </rule>
+
+  <rule id="100751" level="12">
+    <if_sid>5904</if_sid>
+    <description>Security: User added to privileged group (sudo/wheel/admin)</description>
+    <group>account-management,privilege-modification,soc-alert,high-severity,</group>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+  </rule>
+
+</group>

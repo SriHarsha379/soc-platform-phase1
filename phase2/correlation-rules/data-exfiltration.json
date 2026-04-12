@@ -1,0 +1,71 @@
+{
+  "id": "data-exfiltration",
+  "name": "Data Exfiltration Detection",
+  "description": "Detects potential data exfiltration: outbound traffic exceeding 1 GB in 5 minutes to unknown external destinations",
+  "severity": "critical",
+  "mitre": {
+    "tactic": "Exfiltration",
+    "technique": "T1048",
+    "subtechnique": "T1048.003"
+  },
+  "detection": {
+    "type": "aggregation_threshold",
+    "index_patterns": ["wazuh-alerts-*"],
+    "query": {
+      "bool": {
+        "filter": [
+          { "exists": { "field": "data.bytes_sent" } },
+          { "exists": { "field": "destination.ip" } }
+        ],
+        "must_not": [
+          {
+            "terms": {
+              "destination.ip": [
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "aggregation": {
+      "field": "host.name",
+      "metric": "sum",
+      "metric_field": "data.bytes_sent",
+      "threshold": 1073741824,
+      "time_window": "5m"
+    }
+  },
+  "baseline": {
+    "enabled": true,
+    "lookback_days": 30,
+    "deviation_multiplier": 3.0,
+    "description": "Alert when current traffic exceeds 3x 30-day average"
+  },
+  "wazuh_rule_ids": [100200],
+  "alert_output": {
+    "tag": "data-exfiltration-suspected",
+    "severity": "critical",
+    "actions": ["notify_soc", "escalate_tier2", "escalate_tier3", "create_p1_ticket"],
+    "optional_response": "block_connection",
+    "dedup_key": "host.name",
+    "dedup_window": "15m"
+  },
+  "false_positive_guidance": [
+    "Scheduled backup jobs transferring large datasets",
+    "Database replication to known secondary sites",
+    "OS update/patch downloads",
+    "Video streaming or large file downloads by users"
+  ],
+  "remediation_steps": [
+    "1. IMMEDIATELY identify destination IP and lookup threat intel",
+    "2. Block outbound connection to destination if suspicious",
+    "3. Identify source process responsible for traffic",
+    "4. Isolate the host from network if compromise confirmed",
+    "5. Preserve memory image and disk for forensics",
+    "6. Notify legal/compliance team if PII data may be involved",
+    "7. Initiate full incident response procedure"
+  ]
+}

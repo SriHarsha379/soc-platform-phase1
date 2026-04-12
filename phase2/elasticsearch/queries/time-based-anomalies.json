@@ -5,6 +5,8 @@
   "mitre_tactic": "Initial Access",
   "mitre_technique": "T1078.004",
 
+  "_note_painless_script": "The off-hours Painless script is referenced once via a top-level filter agg; sub-aggs run inside that single filter to avoid duplication. For production use, register this as a stored script via PUT /_scripts/soc-off-hours-filter.",
+
   "query": {
     "size": 0,
     "query": {
@@ -35,21 +37,21 @@
       }
     },
     "aggs": {
-      "by_hour": {
-        "date_histogram": {
-          "field": "@timestamp",
-          "calendar_interval": "1h",
-          "time_zone": "UTC"
+      "off_hours_filter": {
+        "_comment": "Single Painless filter applied once; all sub-aggs run inside it to avoid script duplication",
+        "filter": {
+          "script": {
+            "script": {
+              "id": "soc-off-hours-filter"
+            }
+          }
         },
         "aggs": {
-          "off_hours_events": {
-            "filter": {
-              "script": {
-                "script": {
-                  "source": "ZonedDateTime dt = doc['@timestamp'].value; int hour = dt.getHour(); int dow = dt.getDayOfWeek().getValue(); boolean isWeekend = dow == 6 || dow == 7; boolean isOffHours = hour < 9 || hour >= 18; return isWeekend || isOffHours;",
-                  "lang": "painless"
-                }
-              }
+          "by_hour": {
+            "date_histogram": {
+              "field": "@timestamp",
+              "calendar_interval": "1h",
+              "time_zone": "UTC"
             },
             "aggs": {
               "by_user": {
@@ -59,19 +61,7 @@
                 "terms": { "field": "host.name", "size": 20 }
               }
             }
-          }
-        }
-      },
-      "off_hours_by_user": {
-        "filter": {
-          "script": {
-            "script": {
-              "source": "ZonedDateTime dt = doc['@timestamp'].value; int hour = dt.getHour(); int dow = dt.getDayOfWeek().getValue(); boolean isWeekend = dow == 6 || dow == 7; boolean isOffHours = hour < 9 || hour >= 18; return isWeekend || isOffHours;",
-              "lang": "painless"
-            }
-          }
-        },
-        "aggs": {
+          },
           "top_users": {
             "terms": {
               "field": "user.name",
@@ -93,16 +83,10 @@
         }
       },
       "new_user_access": {
-        "_comment": "Users who have never accessed this system during any time",
+        "_comment": "Users who appeared in last 24h; correlate with off_hours_filter for first-time off-hours access",
         "filter": {
-          "bool": {
-            "must": [
-              {
-                "range": {
-                  "@timestamp": { "gte": "now-24h" }
-                }
-              }
-            ]
+          "range": {
+            "@timestamp": { "gte": "now-24h" }
           }
         },
         "aggs": {
@@ -110,6 +94,17 @@
             "terms": { "field": "user.name", "size": 50, "min_doc_count": 1 }
           }
         }
+      }
+    }
+  },
+
+  "stored_script_registration": {
+    "_comment": "Register this Painless script in ES before running the query above (required for stored script reference)",
+    "api": "PUT /_scripts/soc-off-hours-filter",
+    "body": {
+      "script": {
+        "lang": "painless",
+        "source": "ZonedDateTime dt = doc['@timestamp'].value; int hour = dt.getHour(); int dow = dt.getDayOfWeek().getValue(); boolean isWeekend = dow == 6 || dow == 7; boolean isOffHours = hour < 9 || hour >= 18; return isWeekend || isOffHours;"
       }
     }
   },

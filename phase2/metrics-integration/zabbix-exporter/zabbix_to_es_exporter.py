@@ -222,10 +222,11 @@ METRIC_FIELD_MAP = {
     "system.cpu.load[percpu,avg1]": ("system.load.1", 1.0),
     "system.cpu.load[percpu,avg5]": ("system.load.5", 1.0),
     "system.cpu.load[percpu,avg15]": ("system.load.15", 1.0),
-    # Memory
-    "vm.memory.size[available]": ("system.memory.actual.used.bytes", -1.0),  # invert: free → used
+    # Memory — Zabbix reports available (free) bytes; store as-is under the correct ECS field
+    "vm.memory.size[available]": ("system.memory.free", 1.0),
     "vm.memory.size[total]": ("system.memory.total", 1.0),
-    "vm.memory.size[pavailable]": ("system.memory.actual.used.pct", -0.01),
+    # pavailable = percent of memory available (e.g., 40 means 40% free); stored as 0-1 fraction
+    "vm.memory.size[pavailable]": ("system.memory.actual.free.pct", 0.01),
     # Disk
     "vfs.fs.size[/,used]": ("system.disk.used.bytes", 1.0),
     "vfs.fs.size[/,total]": ("system.disk.total", 1.0),

@@ -23,7 +23,7 @@
           "readonly": {},
           "allocate": {
             "number_of_replicas": 1,
-            "require": {
+            "prefer": {
               "data": "warm"
             }
           },
@@ -44,7 +44,7 @@
           },
           "allocate": {
             "number_of_replicas": 0,
-            "require": {
+            "prefer": {
               "data": "cold"
             }
           },

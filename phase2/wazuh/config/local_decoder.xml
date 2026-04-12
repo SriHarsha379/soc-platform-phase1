@@ -108,6 +108,8 @@
 
 <!-- ============================================================
      Network Firewall / iptables Decoder
+     Note: In Wazuh <prematch>, pipe '|' is the OR operator.
+     This matches kernel logs containing "DROPPED" OR "BLOCKED" OR "DPT=".
      ============================================================ -->
 <decoder name="soc-iptables">
   <program_name>kernel</program_name>

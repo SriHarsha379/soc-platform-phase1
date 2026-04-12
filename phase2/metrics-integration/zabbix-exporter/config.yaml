@@ -1,0 +1,45 @@
+# Zabbix → Elasticsearch Exporter Configuration
+# SOC Platform Phase 2 - Metrics Integration
+# Copy this file and adjust values for your environment.
+
+# ── Zabbix Connection ─────────────────────────────────────────────────────────
+zabbix:
+  url: "http://localhost:8080/zabbix"      # Zabbix frontend URL
+  user: "Admin"
+  password: "zabbix"                        # Change in production
+  timeout: 30                               # HTTP timeout in seconds
+
+  # Filter by host group names (empty list = export all hosts)
+  host_groups:
+    - "SOC-Monitored-Servers"
+    - "Linux servers"
+
+  # Zabbix item key patterns to export (supports wildcards)
+  item_key_patterns:
+    - "system.cpu.util*"
+    - "system.cpu.load*"
+    - "vm.memory.size*"
+    - "vfs.fs.size*"
+    - "net.if.in*"
+    - "net.if.out*"
+    - "system.uptime"
+    - "agent.ping"
+    - "proc.num*"
+
+# ── Elasticsearch Connection ──────────────────────────────────────────────────
+elasticsearch:
+  url: "http://localhost:9200"
+  user: "elastic"
+  password: "elastic_secure_password"       # Change in production; use env vars in prod
+  timeout: 30
+  index_prefix: "metrics-zabbix"           # Index pattern: metrics-zabbix-000001, etc.
+
+# ── Export Settings ───────────────────────────────────────────────────────────
+export_interval_seconds: 60               # How often to pull metrics (seconds)
+lookback_seconds: 120                     # How far back to pull history per cycle
+batch_size: 500                           # Documents per bulk request
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level: "INFO"                           # DEBUG, INFO, WARNING, ERROR
+  file: "/var/log/zabbix-es-exporter.log" # Set to "" to log to stdout only

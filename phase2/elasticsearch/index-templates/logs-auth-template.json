@@ -1,0 +1,94 @@
+{
+  "index_patterns": ["logs-auth-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "index.lifecycle.name": "logs-ilm-policy",
+      "index.lifecycle.rollover_alias": "logs-auth",
+      "index.refresh_interval": "5s",
+      "index.codec": "best_compression",
+      "index.mapping.total_fields.limit": 1000
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "event": {
+          "properties": {
+            "action":   { "type": "keyword" },
+            "category": { "type": "keyword", "value": "authentication" },
+            "dataset":  { "type": "keyword", "value": "auth" },
+            "kind":     { "type": "keyword" },
+            "module":   { "type": "keyword" },
+            "outcome":  { "type": "keyword" },
+            "severity": { "type": "integer" },
+            "type":     { "type": "keyword" }
+          }
+        },
+        "host": {
+          "properties": {
+            "hostname": { "type": "keyword" },
+            "ip":       { "type": "ip", "ignore_malformed": true },
+            "name":     { "type": "keyword" }
+          }
+        },
+        "source": {
+          "properties": {
+            "ip":   { "type": "ip", "ignore_malformed": true },
+            "port": { "type": "integer" },
+            "geo": {
+              "properties": {
+                "city_name":    { "type": "keyword" },
+                "country_iso_code": { "type": "keyword" },
+                "country_name": { "type": "keyword" },
+                "location":     { "type": "geo_point" },
+                "region_name":  { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "user": {
+          "properties": {
+            "name":   { "type": "keyword" },
+            "domain": { "type": "keyword" },
+            "id":     { "type": "keyword" }
+          }
+        },
+        "user_agent": {
+          "properties": {
+            "original": { "type": "keyword" },
+            "name":     { "type": "keyword" }
+          }
+        },
+        "process": {
+          "properties": {
+            "name": { "type": "keyword" },
+            "pid":  { "type": "long" }
+          }
+        },
+        "message":  { "type": "text", "analyzer": "english" },
+        "tags":     { "type": "keyword" },
+        "labels":   { "type": "object" },
+        "correlation": {
+          "properties": {
+            "id":       { "type": "keyword" },
+            "rule":     { "type": "keyword" },
+            "severity": { "type": "keyword" },
+            "chain_id": { "type": "keyword" }
+          }
+        }
+      }
+    }
+  },
+  "priority": 160,
+  "_meta": {
+    "description": "Auth log index template - ECS compliant, correlation-ready",
+    "phase": "phase2",
+    "version": "1.0.0"
+  }
+}

@@ -1,0 +1,65 @@
+## JVM Configuration for Elasticsearch - Phase 2 SOC Platform
+##
+## Heap: Set to 50% of available RAM; never exceed 31 GB (compressed OOPs limit).
+## Adjust -Xms and -Xmx to match your server's RAM.
+## Example for 16 GB RAM server: -Xms8g / -Xmx8g
+
+################################################################
+## IMPORTANT: Always set Xms == Xmx to avoid heap resizing.
+################################################################
+
+# ── Heap Size ─────────────────────────────────────────────────────────────────
+-Xms4g
+-Xmx4g
+
+# ── GC Configuration ──────────────────────────────────────────────────────────
+# Use G1GC for predictable pause times (recommended for ES 7.x+)
+-XX:+UseG1GC
+-XX:G1ReservePercent=25
+-XX:InitiatingHeapOccupancyPercent=30
+
+# ── GC Logging ────────────────────────────────────────────────────────────────
+-Xlog:gc*,gc+age=trace,safepoint:file=/var/log/elasticsearch/gc.log:utctime,pid,tags:filecount=32,filesize=64m
+
+# ── JVM Error File ────────────────────────────────────────────────────────────
+-XX:ErrorFile=/var/log/elasticsearch/hs_err_pid%p.log
+
+# ── Memory Settings ───────────────────────────────────────────────────────────
+# Disable explicit GC calls triggered by NIO off-heap buffer management
+-XX:+DisableExplicitGC
+
+# Enable pre-touching memory pages at JVM startup to avoid first-access latency
+-XX:+AlwaysPreTouch
+
+# ── JVM Temporary Directory ───────────────────────────────────────────────────
+-Djava.io.tmpdir=${ES_TMPDIR}
+
+# ── Performance Flags ─────────────────────────────────────────────────────────
+-XX:+UnlockDiagnosticVMOptions
+-XX:+PrintCompressedOopsMode
+
+# Enable JVM intrinsics for better SIMD performance
+-XX:+UseStringDeduplication
+
+# ── Thread Stack Size ─────────────────────────────────────────────────────────
+-Xss1m
+
+# ── Heap Dump on OOM ──────────────────────────────────────────────────────────
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/var/log/elasticsearch/heapdump.hprof
+
+# ── Network Settings ──────────────────────────────────────────────────────────
+# Prefer IPv4 stack (adjust if IPv6-only environment)
+-Djava.net.preferIPv4Stack=true
+
+# ── Additional JVM Options ────────────────────────────────────────────────────
+# Ensure consistent locale
+-Dfile.encoding=UTF-8
+-Djava.security.egd=file:/dev/urandom
+
+# ── Module Opens (Java 11+ compatibility) ─────────────────────────────────────
+-Djdk.tls.rejectClientInitiatedRenegotiation=true
+--add-opens=java.base/java.io=ALL-UNNAMED
+--add-opens=java.base/java.lang=ALL-UNNAMED
+--add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+--add-opens=java.base/java.util=ALL-UNNAMED

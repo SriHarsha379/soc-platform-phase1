@@ -1,0 +1,21 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "failed-logins",
+      "type": "search",
+      "attributes": {
+        "title": "Failed Login Attempts",
+        "description": "All failed SSH and authentication events - useful for brute force investigation",
+        "columns": ["@timestamp", "host.name", "source.ip", "user.name", "rule.description", "rule.level"],
+        "sort": [["@timestamp", "desc"]],
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"event.outcome:\\\"failure\\\" AND event.category:\\\"authentication\\\"\"},\"filter\":[],\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\"}"
+        }
+      },
+      "references": [
+        {"name": "kibanaSavedObjectMeta.searchSourceJSON.index", "type": "index-pattern", "id": "wazuh-alerts-*"}
+      ]
+    }
+  ]
+}

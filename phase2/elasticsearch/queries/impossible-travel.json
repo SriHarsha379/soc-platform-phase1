@@ -1,0 +1,108 @@
+{
+  "_comment": "Impossible travel: same user logging in from geographically distant locations in unrealistic time",
+  "description": "Detects account compromise via geolocation-based login anomaly detection",
+  "severity": "high",
+  "mitre_tactic": "Initial Access",
+  "mitre_technique": "T1078",
+
+  "query": {
+    "size": 0,
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "range": {
+              "@timestamp": {
+                "gte": "now-4h",
+                "lte": "now"
+              }
+            }
+          },
+          { "match": { "event.outcome": "success" } },
+          {
+            "bool": {
+              "should": [
+                { "match": { "event.category": "authentication" } },
+                { "match": { "event.action": "ssh_login" } },
+                { "terms": { "rule.id": ["5715", "5718", "2501", "2502"] } }
+              ],
+              "minimum_should_match": 1
+            }
+          }
+        ],
+        "filter": [
+          { "exists": { "field": "source.geo.location" } },
+          { "exists": { "field": "user.name" } }
+        ]
+      }
+    },
+    "aggs": {
+      "by_user": {
+        "terms": {
+          "field": "user.name",
+          "size": 200,
+          "min_doc_count": 2
+        },
+        "aggs": {
+          "login_locations": {
+            "geo_centroid": { "field": "source.geo.location" }
+          },
+          "country_count": {
+            "cardinality": { "field": "source.geo.country_iso_code" }
+          },
+          "by_country": {
+            "terms": {
+              "field": "source.geo.country_iso_code",
+              "size": 10
+            },
+            "aggs": {
+              "last_login": { "max": { "field": "@timestamp" } }
+            }
+          },
+          "by_source_ip": {
+            "terms": {
+              "field": "source.ip",
+              "size": 20
+            },
+            "aggs": {
+              "location": {
+                "geo_centroid": { "field": "source.geo.location" }
+              },
+              "last_seen": { "max": { "field": "@timestamp" } }
+            }
+          },
+          "multi_country_logins": {
+            "bucket_selector": {
+              "buckets_path": { "countries": "country_count" },
+              "script": "params.countries > 1"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "velocity_check_script": {
+    "_comment": "Painless script to calculate travel speed between two login events",
+    "description": "Calculate km/h between consecutive login locations and flag if > 900 km/h",
+    "script": "double haversine(double lat1, double lon1, double lat2, double lon2) { double R = 6371.0; double dLat = Math.toRadians(lat2 - lat1); double dLon = Math.toRadians(lon2 - lon1); double a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); } double speed = haversine(params.lat1, params.lon1, params.lat2, params.lon2) / ((params.time2 - params.time1) / 3600000.0); return speed > 900;"
+  },
+
+  "alert_condition": {
+    "max_travel_speed_kmh": 900,
+    "min_distance_km": 500,
+    "window": "4h",
+    "field": "user.name",
+    "require_geo_data": true
+  },
+
+  "alert_action": {
+    "create_alert": true,
+    "tag_as": "impossible-travel-detected",
+    "severity": "high",
+    "notify_soc": true,
+    "escalate_to_tier2": true,
+    "optional_lock_account": true,
+    "playbook": "docs/playbooks/impossible-travel-response.md"
+  }
+}

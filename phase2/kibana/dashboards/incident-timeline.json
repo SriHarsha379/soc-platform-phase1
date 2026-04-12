@@ -1,0 +1,52 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "soc-incident-timeline-dashboard",
+      "type": "dashboard",
+      "attributes": {
+        "title": "Incident Timeline Investigation",
+        "description": "Chronological event correlation view for incident investigation - related log grouping, severity progression, drill-down to raw logs",
+        "panelsJSON": "[{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":0,\"y\":0,\"w\":48,\"h\":10,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":0,\"y\":10,\"w\":12,\"h\":8,\"i\":\"2\"},\"panelIndex\":\"2\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":12,\"y\":10,\"w\":12,\"h\":8,\"i\":\"3\"},\"panelIndex\":\"3\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"visualization\",\"gridData\":{\"x\":24,\"y\":10,\"w\":24,\"h\":8,\"i\":\"4\"},\"panelIndex\":\"4\",\"embeddableConfig\":{}},{\"version\":\"8.11.0\",\"type\":\"search\",\"gridData\":{\"x\":0,\"y\":18,\"w\":48,\"h\":25,\"i\":\"5\"},\"panelIndex\":\"5\",\"embeddableConfig\":{}}]",
+        "optionsJSON": "{\"useMargins\":true,\"syncColors\":false,\"hidePanelTitles\":false}",
+        "timeRestore": true,
+        "timeTo": "now",
+        "timeFrom": "now-4h",
+        "refreshInterval": {
+          "pause": true,
+          "value": 0
+        },
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[]}"
+        }
+      },
+      "references": []
+    }
+  ],
+  "_meta": {
+    "description": "Incident Timeline Dashboard - Phase 2",
+    "panels": [
+      "Event timeline (1-minute buckets, color-coded by severity)",
+      "Severity progression bar chart (how severity changed over incident)",
+      "Affected hosts list with event counts",
+      "Affected users list with event counts",
+      "MITRE ATT&CK technique distribution",
+      "Chronological raw event table with full_log drill-down"
+    ],
+    "filters": [
+      "Time range (default: last 4h, configurable for incident window)",
+      "Correlation chain ID filter (group related events)",
+      "Host filter",
+      "User filter",
+      "Severity filter",
+      "Rule group filter (brute-force/privilege-escalation/etc.)"
+    ],
+    "investigation_workflow": [
+      "1. Set time range to cover the incident window",
+      "2. Filter by affected host or user",
+      "3. Review severity progression to identify escalation",
+      "4. Use correlation chain ID to group related events",
+      "5. Drill into raw logs for forensic detail"
+    ]
+  }
+}

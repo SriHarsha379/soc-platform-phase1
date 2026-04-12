@@ -1,0 +1,175 @@
+{
+  "index_patterns": ["wazuh-alerts-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "number_of_shards": 3,
+      "number_of_replicas": 1,
+      "index.lifecycle.name": "wazuh-ilm-policy",
+      "index.lifecycle.rollover_alias": "wazuh-alerts",
+      "index.refresh_interval": "5s",
+      "index.translog.durability": "async",
+      "index.translog.sync_interval": "5s",
+      "index.mapping.total_fields.limit": 2000,
+      "index.query.default_field": ["rule.description", "agent.name", "data.srcip"],
+      "index.codec": "best_compression",
+      "analysis": {
+        "analyzer": {
+          "soc_keyword_analyzer": {
+            "type": "custom",
+            "tokenizer": "keyword",
+            "filter": ["lowercase"]
+          }
+        }
+      }
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "agent": {
+          "properties": {
+            "id":   { "type": "keyword" },
+            "ip":   { "type": "ip" },
+            "name": { "type": "keyword" },
+            "version": { "type": "keyword" }
+          }
+        },
+        "data": {
+          "properties": {
+            "dstip":       { "type": "ip", "ignore_malformed": true },
+            "dstport":     { "type": "integer" },
+            "srcip":       { "type": "ip", "ignore_malformed": true },
+            "srcport":     { "type": "integer" },
+            "srcuser":     { "type": "keyword" },
+            "url":         { "type": "keyword" },
+            "protocol":    { "type": "keyword" },
+            "bytes_sent":  { "type": "long" },
+            "bytes_recv":  { "type": "long" },
+            "action":      { "type": "keyword" }
+          }
+        },
+        "event": {
+          "properties": {
+            "action":   { "type": "keyword" },
+            "category": { "type": "keyword" },
+            "dataset":  { "type": "keyword" },
+            "kind":     { "type": "keyword" },
+            "module":   { "type": "keyword" },
+            "outcome":  { "type": "keyword" },
+            "severity": { "type": "integer" },
+            "type":     { "type": "keyword" }
+          }
+        },
+        "host": {
+          "properties": {
+            "hostname": { "type": "keyword" },
+            "id":       { "type": "keyword" },
+            "ip":       { "type": "ip", "ignore_malformed": true },
+            "name":     { "type": "keyword" },
+            "os": {
+              "properties": {
+                "family":   { "type": "keyword" },
+                "name":     { "type": "keyword" },
+                "platform": { "type": "keyword" },
+                "version":  { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "rule": {
+          "properties": {
+            "description": { "type": "text", "analyzer": "english" },
+            "firedtimes":  { "type": "integer" },
+            "groups":      { "type": "keyword" },
+            "id":          { "type": "keyword" },
+            "level":       { "type": "integer" },
+            "mail":        { "type": "boolean" },
+            "pci_dss":     { "type": "keyword" },
+            "gdpr":        { "type": "keyword" },
+            "hipaa":       { "type": "keyword" },
+            "tsc":         { "type": "keyword" },
+            "mitre": {
+              "properties": {
+                "id":       { "type": "keyword" },
+                "tactic":   { "type": "keyword" },
+                "technique": { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "source": {
+          "properties": {
+            "ip":   { "type": "ip", "ignore_malformed": true },
+            "port": { "type": "integer" },
+            "user": {
+              "properties": {
+                "name": { "type": "keyword" }
+              }
+            },
+            "geo": {
+              "properties": {
+                "city_name":    { "type": "keyword" },
+                "country_name": { "type": "keyword" },
+                "location":     { "type": "geo_point" },
+                "region_name":  { "type": "keyword" }
+              }
+            }
+          }
+        },
+        "destination": {
+          "properties": {
+            "ip":   { "type": "ip", "ignore_malformed": true },
+            "port": { "type": "integer" }
+          }
+        },
+        "user": {
+          "properties": {
+            "name":   { "type": "keyword" },
+            "domain": { "type": "keyword" },
+            "id":     { "type": "keyword" }
+          }
+        },
+        "tags": { "type": "keyword" },
+        "labels": { "type": "object" },
+        "correlation": {
+          "properties": {
+            "id":       { "type": "keyword" },
+            "rule":     { "type": "keyword" },
+            "severity": { "type": "keyword" },
+            "chain_id": { "type": "keyword" }
+          }
+        },
+        "manager": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
+        "id":       { "type": "keyword" },
+        "cluster": {
+          "properties": {
+            "name": { "type": "keyword" },
+            "node": { "type": "keyword" }
+          }
+        },
+        "decoder": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
+        "full_log":       { "type": "text", "analyzer": "english" },
+        "previous_output":{ "type": "text" },
+        "location":       { "type": "keyword" }
+      }
+    }
+  },
+  "priority": 200,
+  "_meta": {
+    "description": "Wazuh security alerts index template - ECS compliant",
+    "phase": "phase2",
+    "version": "1.0.0"
+  }
+}

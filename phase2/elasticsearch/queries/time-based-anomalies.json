@@ -1,0 +1,139 @@
+{
+  "_comment": "Time-based anomalies: access outside business hours (09:00-18:00 Mon-Fri) or on weekends",
+  "description": "Detects unauthorized or suspicious access patterns outside normal business hours",
+  "severity": "medium",
+  "mitre_tactic": "Initial Access",
+  "mitre_technique": "T1078.004",
+
+  "query": {
+    "size": 0,
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "range": {
+              "@timestamp": {
+                "gte": "now-24h",
+                "lte": "now"
+              }
+            }
+          },
+          {
+            "bool": {
+              "should": [
+                { "match": { "event.category": "authentication" } },
+                { "match": { "event.outcome": "success" } },
+                { "terms": { "rule.id": ["5715", "5718", "2501", "2502", "100001"] } }
+              ],
+              "minimum_should_match": 1
+            }
+          }
+        ],
+        "filter": [
+          { "exists": { "field": "user.name" } }
+        ]
+      }
+    },
+    "aggs": {
+      "by_hour": {
+        "date_histogram": {
+          "field": "@timestamp",
+          "calendar_interval": "1h",
+          "time_zone": "UTC"
+        },
+        "aggs": {
+          "off_hours_events": {
+            "filter": {
+              "script": {
+                "script": {
+                  "source": "ZonedDateTime dt = doc['@timestamp'].value; int hour = dt.getHour(); int dow = dt.getDayOfWeek().getValue(); boolean isWeekend = dow == 6 || dow == 7; boolean isOffHours = hour < 9 || hour >= 18; return isWeekend || isOffHours;",
+                  "lang": "painless"
+                }
+              }
+            },
+            "aggs": {
+              "by_user": {
+                "terms": { "field": "user.name", "size": 20 }
+              },
+              "by_host": {
+                "terms": { "field": "host.name", "size": 20 }
+              }
+            }
+          }
+        }
+      },
+      "off_hours_by_user": {
+        "filter": {
+          "script": {
+            "script": {
+              "source": "ZonedDateTime dt = doc['@timestamp'].value; int hour = dt.getHour(); int dow = dt.getDayOfWeek().getValue(); boolean isWeekend = dow == 6 || dow == 7; boolean isOffHours = hour < 9 || hour >= 18; return isWeekend || isOffHours;",
+              "lang": "painless"
+            }
+          }
+        },
+        "aggs": {
+          "top_users": {
+            "terms": {
+              "field": "user.name",
+              "size": 50,
+              "order": { "_count": "desc" }
+            },
+            "aggs": {
+              "hosts_accessed": {
+                "terms": { "field": "host.name", "size": 10 }
+              },
+              "time_distribution": {
+                "date_histogram": {
+                  "field": "@timestamp",
+                  "calendar_interval": "1h"
+                }
+              }
+            }
+          }
+        }
+      },
+      "new_user_access": {
+        "_comment": "Users who have never accessed this system during any time",
+        "filter": {
+          "bool": {
+            "must": [
+              {
+                "range": {
+                  "@timestamp": { "gte": "now-24h" }
+                }
+              }
+            ]
+          }
+        },
+        "aggs": {
+          "first_time_users": {
+            "terms": { "field": "user.name", "size": 50, "min_doc_count": 1 }
+          }
+        }
+      }
+    }
+  },
+
+  "business_hours_config": {
+    "timezone": "UTC",
+    "start_hour": 9,
+    "end_hour": 18,
+    "working_days": [1, 2, 3, 4, 5],
+    "weekend_days": [6, 7]
+  },
+
+  "alert_condition": {
+    "min_off_hours_events": 3,
+    "window": "24h",
+    "field": "user.name",
+    "new_user_flag": true
+  },
+
+  "alert_action": {
+    "create_alert": true,
+    "tag_as": "off-hours-access-detected",
+    "severity": "medium",
+    "notify_soc": true,
+    "playbook": "docs/playbooks/off-hours-access-response.md"
+  }
+}

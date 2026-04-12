@@ -1,0 +1,97 @@
+# ============================================================
+# Elasticsearch Optimized Configuration - Phase 2
+# SOC Platform - Data Analytics Layer
+# ============================================================
+
+# ── Cluster Settings ──────────────────────────────────────
+cluster.name: soc-platform-cluster
+node.name: soc-node-01
+node.roles: [master, data_hot, data_warm, data_cold, ingest]
+
+# ── Network ───────────────────────────────────────────────
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# ── Discovery (single-node MVP; adjust for multi-node) ────
+discovery.type: single-node
+
+# ── Paths ─────────────────────────────────────────────────
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+
+# ── Memory ────────────────────────────────────────────────
+# Disable swapping for stable latency
+bootstrap.memory_lock: true
+
+# ── Index & Shard Settings ────────────────────────────────
+# Default shard and replica counts (override per index template)
+index.number_of_shards: 1
+index.number_of_replicas: 0
+
+# Throttle recovery to avoid I/O saturation during node restarts
+indices.recovery.max_bytes_per_sec: 200mb
+
+# ── Thread Pool Tuning ────────────────────────────────────
+# Indexing thread pool: CPU cores x 2 (capped at 32)
+thread_pool.write.size: 8
+thread_pool.write.queue_size: 1000
+thread_pool.search.size: 8
+thread_pool.search.queue_size: 1000
+
+# ── Query & Field-Data Cache ──────────────────────────────
+indices.queries.cache.size: 20%
+indices.fielddata.cache.size: 20%
+indices.memory.index_buffer_size: 20%
+
+# ── Circuit Breakers ──────────────────────────────────────
+indices.breaker.total.limit: 70%
+indices.breaker.fielddata.limit: 40%
+indices.breaker.request.limit: 40%
+
+# ── Bulk Ingestion Tuning ─────────────────────────────────
+# Refresh interval relaxed for high-throughput ingestion
+# (per-index override recommended for active write indices)
+index.refresh_interval: 5s
+index.translog.durability: async
+index.translog.sync_interval: 5s
+
+# ── Slow Log Thresholds ───────────────────────────────────
+index.search.slowlog.threshold.query.warn: 10s
+index.search.slowlog.threshold.query.info: 5s
+index.search.slowlog.threshold.fetch.warn: 1s
+index.indexing.slowlog.threshold.index.warn: 10s
+index.indexing.slowlog.threshold.index.info: 5s
+
+# ── Hot-Warm Architecture (ILM) ───────────────────────────
+# Node attribute to differentiate hot vs. warm/cold tiers.
+# Set on each node via CLI: -Enode.attr.data=hot|warm|cold
+# node.attr.data: hot   # Uncomment and set per node in multi-node deployments
+
+# ── Security (X-Pack) ─────────────────────────────────────
+xpack.security.enabled: true
+xpack.security.enrollment.enabled: true
+xpack.security.http.ssl.enabled: false      # Enable TLS in production
+xpack.security.transport.ssl.enabled: false # Enable TLS in production
+
+# ── Monitoring ────────────────────────────────────────────
+xpack.monitoring.collection.enabled: true
+xpack.monitoring.elasticsearch.collection.enabled: true
+
+# ── ILM (Index Lifecycle Management) ─────────────────────
+# ILM is enabled by default in 7.x+; ensure xpack.ilm.enabled is true
+xpack.ilm.enabled: true
+
+# ── Audit Logging ─────────────────────────────────────────
+xpack.security.audit.enabled: true
+xpack.security.audit.logfile.events.include:
+  - authentication_success
+  - authentication_failed
+  - access_denied
+  - connection_denied
+
+# ── Snapshot / Backup ─────────────────────────────────────
+# path.repo: ["/mnt/elasticsearch-snapshots"]   # Uncomment and set backup path
+
+# ── Cross-Cluster Search (future) ────────────────────────
+# cluster.remote.connect: false

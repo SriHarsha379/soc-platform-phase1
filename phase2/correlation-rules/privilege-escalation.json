@@ -1,0 +1,71 @@
+{
+  "id": "privilege-escalation",
+  "name": "Privilege Escalation Detection",
+  "description": "Detects privilege escalation: sudo or su success following failed authentication attempts within 15 minutes",
+  "severity": "high",
+  "mitre": {
+    "tactic": "Privilege Escalation",
+    "technique": "T1548",
+    "subtechnique": "T1548.003"
+  },
+  "detection": {
+    "type": "sequence",
+    "index_patterns": ["wazuh-alerts-*", "logs-auth-*"],
+    "phases": [
+      {
+        "phase": 1,
+        "name": "failed_authentication",
+        "query": {
+          "bool": {
+            "must": [
+              { "match": { "event.outcome": "failure" } },
+              { "match": { "event.category": "authentication" } }
+            ]
+          }
+        },
+        "window": "15m"
+      },
+      {
+        "phase": 2,
+        "name": "privilege_escalation",
+        "query": {
+          "bool": {
+            "should": [
+              { "terms": { "rule.id": ["5402", "5406", "100100"] } },
+              { "wildcard": { "event.action": "*sudo*" } }
+            ]
+          }
+        },
+        "window_after_phase1": "15m"
+      }
+    ],
+    "correlation_field": ["user.name", "host.name"]
+  },
+  "wazuh_rule_ids": [100101, 100102, 100103, 100104],
+  "alert_output": {
+    "tag": "privilege-escalation-detected",
+    "severity": "high",
+    "actions": ["notify_soc", "escalate_tier2", "create_ticket"],
+    "dedup_key": "user.name",
+    "dedup_window": "30m"
+  },
+  "context_enrichment": [
+    "User's typical working hours",
+    "Previous sudo usage history",
+    "Commands executed after escalation",
+    "Files accessed after escalation"
+  ],
+  "false_positive_guidance": [
+    "System administrators performing routine maintenance",
+    "Automated deployment scripts using sudo",
+    "CI/CD pipelines with misconfigured credentials"
+  ],
+  "remediation_steps": [
+    "1. Identify the user and verify if activity is expected",
+    "2. Review commands executed after escalation (audit log)",
+    "3. Check files modified after privilege gain",
+    "4. If unauthorized: disable user account immediately",
+    "5. Rotate affected credentials",
+    "6. Review sudoers file for unauthorized entries"
+  ]
+}

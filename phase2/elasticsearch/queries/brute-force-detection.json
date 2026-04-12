@@ -1,0 +1,94 @@
+{
+  "_comment": "Brute force detection: 5+ failed SSH/login attempts from same source IP within 5 minutes",
+  "description": "Detects brute force attacks by aggregating failed authentication events",
+  "severity": "medium",
+  "mitre_tactic": "Credential Access",
+  "mitre_technique": "T1110",
+
+  "query": {
+    "size": 0,
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "range": {
+              "@timestamp": {
+                "gte": "now-5m",
+                "lte": "now"
+              }
+            }
+          },
+          {
+            "bool": {
+              "should": [
+                { "match": { "event.action": "ssh_failed_login" } },
+                { "match": { "event.outcome": "failure" } },
+                { "match": { "event.category": "authentication" } },
+                { "terms": { "rule.id": ["5710", "5711", "5712", "5716", "5720", "5760"] } }
+              ],
+              "minimum_should_match": 1
+            }
+          }
+        ],
+        "filter": [
+          {
+            "exists": { "field": "source.ip" }
+          }
+        ]
+      }
+    },
+    "aggs": {
+      "by_source_ip": {
+        "terms": {
+          "field": "source.ip",
+          "size": 100,
+          "min_doc_count": 5,
+          "order": { "_count": "desc" }
+        },
+        "aggs": {
+          "by_target_host": {
+            "terms": {
+              "field": "host.name",
+              "size": 10
+            }
+          },
+          "by_target_user": {
+            "terms": {
+              "field": "user.name",
+              "size": 10
+            }
+          },
+          "first_attempt": {
+            "min": { "field": "@timestamp" }
+          },
+          "last_attempt": {
+            "max": { "field": "@timestamp" }
+          },
+          "time_span_ms": {
+            "scripted_metric": {
+              "init_script": "state.times = []",
+              "map_script": "state.times.add(doc['@timestamp'].value.toInstant().toEpochMilli())",
+              "combine_script": "return state.times",
+              "reduce_script": "def allTimes = []; for (t in states) { allTimes.addAll(t) } if (allTimes.size() < 2) return 0; Collections.sort(allTimes); return allTimes[allTimes.size()-1] - allTimes[0]"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "alert_condition": {
+    "threshold": 5,
+    "window": "5m",
+    "field": "source.ip"
+  },
+
+  "alert_action": {
+    "create_alert": true,
+    "tag_as": "brute-force-detected",
+    "severity": "medium",
+    "notify_soc": true,
+    "optional_block_ip": true,
+    "playbook": "docs/playbooks/brute-force-response.md"
+  }
+}

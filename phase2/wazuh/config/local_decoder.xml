@@ -1,0 +1,130 @@
+<!--
+  local_decoder.xml - Phase 2 Custom Wazuh Decoders
+  SOC Platform - Data Analytics & Log Correlation Layer
+  Decodes custom application logs, network logs, and enriched events
+-->
+
+<decoder_list>
+
+<!-- ============================================================
+     SSH Extended Decoder (captures source IP more reliably)
+     ============================================================ -->
+<decoder name="soc-sshd">
+  <program_name>sshd</program_name>
+</decoder>
+
+<decoder name="soc-sshd-failed">
+  <parent>soc-sshd</parent>
+  <prematch>Failed \S+ for</prematch>
+  <regex>Failed \S+ for (\S+) from (\S+) port (\d+)</regex>
+  <order>user, srcip, srcport</order>
+</decoder>
+
+<decoder name="soc-sshd-accepted">
+  <parent>soc-sshd</parent>
+  <prematch>Accepted \S+ for</prematch>
+  <regex>Accepted \S+ for (\S+) from (\S+) port (\d+)</regex>
+  <order>user, srcip, srcport</order>
+</decoder>
+
+<decoder name="soc-sshd-invalid">
+  <parent>soc-sshd</parent>
+  <prematch>Invalid user</prematch>
+  <regex>Invalid user (\S+) from (\S+) port (\d+)</regex>
+  <order>user, srcip, srcport</order>
+</decoder>
+
+<decoder name="soc-sshd-disconnected">
+  <parent>soc-sshd</parent>
+  <prematch>Disconnected from</prematch>
+  <regex>Disconnected from (\S+) port (\d+) \[preauth\]</regex>
+  <order>srcip, srcport</order>
+</decoder>
+
+<!-- ============================================================
+     Sudo Decoder (privilege escalation tracking)
+     ============================================================ -->
+<decoder name="soc-sudo">
+  <program_name>sudo</program_name>
+</decoder>
+
+<decoder name="soc-sudo-success">
+  <parent>soc-sudo</parent>
+  <prematch>\S+ : TTY=</prematch>
+  <regex>(\S+) : TTY=(\S+) ; PWD=(\S+) ; USER=(\S+) ; COMMAND=(\S+)</regex>
+  <order>user, tty, cwd, dstuser, command</order>
+</decoder>
+
+<decoder name="soc-sudo-failed">
+  <parent>soc-sudo</parent>
+  <prematch>authentication failure</prematch>
+  <regex>user=(\S+)</regex>
+  <order>user</order>
+</decoder>
+
+<!-- ============================================================
+     PAM Decoder (authentication events)
+     ============================================================ -->
+<decoder name="soc-pam">
+  <program_name>^pam_unix$|^(sshd|login|su|sudo)</program_name>
+  <prematch>pam_unix</prematch>
+</decoder>
+
+<decoder name="soc-pam-auth-success">
+  <parent>soc-pam</parent>
+  <prematch>session opened for user</prematch>
+  <regex>session opened for user (\S+) by (\S+)</regex>
+  <order>user, srcuser</order>
+</decoder>
+
+<decoder name="soc-pam-auth-fail">
+  <parent>soc-pam</parent>
+  <prematch>authentication failure</prematch>
+  <regex>user=(\S+) .*rhost=(\S+)</regex>
+  <order>user, srcip</order>
+</decoder>
+
+<!-- ============================================================
+     Nginx / Apache Access Log Decoder
+     ============================================================ -->
+<decoder name="soc-nginx">
+  <program_name>nginx</program_name>
+</decoder>
+
+<decoder name="soc-nginx-access">
+  <parent>soc-nginx</parent>
+  <prematch>\d+\.\d+\.\d+\.\d+</prematch>
+  <regex>(\d+\.\d+\.\d+\.\d+) - (\S+) \[(\S+)\] "(\w+) (\S+) \S+" (\d+) (\d+)</regex>
+  <order>srcip, user, id, url, url, status, size</order>
+</decoder>
+
+<!-- ============================================================
+     Custom Application Log Decoder (JSON format)
+     ============================================================ -->
+<decoder name="soc-app-json">
+  <program_name>soc-app</program_name>
+  <type>json</type>
+</decoder>
+
+<!-- ============================================================
+     Network Firewall / iptables Decoder
+     ============================================================ -->
+<decoder name="soc-iptables">
+  <program_name>kernel</program_name>
+  <prematch>DROPPED\|BLOCKED\|DPT=</prematch>
+</decoder>
+
+<decoder name="soc-iptables-drop">
+  <parent>soc-iptables</parent>
+  <regex>SRC=(\S+) DST=(\S+) .*SPT=(\d+) DPT=(\d+)</regex>
+  <order>srcip, dstip, srcport, dstport</order>
+</decoder>
+
+<!-- ============================================================
+     Wazuh Alert Enrichment Decoder (correlation tags)
+     ============================================================ -->
+<decoder name="soc-correlation-tag">
+  <program_name>soc-correlator</program_name>
+  <type>json</type>
+</decoder>
+</decoder_list>

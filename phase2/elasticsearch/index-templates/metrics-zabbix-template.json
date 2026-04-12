@@ -1,0 +1,150 @@
+{
+  "index_patterns": ["metrics-zabbix-*"],
+  "data_stream": {},
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "index.lifecycle.name": "metrics-ilm-policy",
+      "index.lifecycle.rollover_alias": "metrics-zabbix",
+      "index.refresh_interval": "10s",
+      "index.codec": "best_compression",
+      "index.mapping.total_fields.limit": 500
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "host": {
+          "properties": {
+            "hostname": { "type": "keyword" },
+            "ip":       { "type": "ip", "ignore_malformed": true },
+            "name":     { "type": "keyword" },
+            "id":       { "type": "keyword" }
+          }
+        },
+        "metric": {
+          "properties": {
+            "name":  { "type": "keyword" },
+            "value": { "type": "double" },
+            "unit":  { "type": "keyword" }
+          }
+        },
+        "system": {
+          "properties": {
+            "cpu": {
+              "properties": {
+                "total": {
+                  "properties": {
+                    "pct": { "type": "scaled_float", "scaling_factor": 1000 }
+                  }
+                },
+                "user": {
+                  "properties": {
+                    "pct": { "type": "scaled_float", "scaling_factor": 1000 }
+                  }
+                },
+                "system": {
+                  "properties": {
+                    "pct": { "type": "scaled_float", "scaling_factor": 1000 }
+                  }
+                },
+                "iowait": {
+                  "properties": {
+                    "pct": { "type": "scaled_float", "scaling_factor": 1000 }
+                  }
+                }
+              }
+            },
+            "memory": {
+              "properties": {
+                "actual": {
+                  "properties": {
+                    "used": {
+                      "properties": {
+                        "bytes": { "type": "long" },
+                        "pct":   { "type": "scaled_float", "scaling_factor": 1000 }
+                      }
+                    }
+                  }
+                },
+                "total": { "type": "long" },
+                "free":  { "type": "long" }
+              }
+            },
+            "disk": {
+              "properties": {
+                "io": {
+                  "properties": {
+                    "read": {
+                      "properties": {
+                        "bytes": { "type": "long" }
+                      }
+                    },
+                    "write": {
+                      "properties": {
+                        "bytes": { "type": "long" }
+                      }
+                    }
+                  }
+                },
+                "used": {
+                  "properties": {
+                    "pct":   { "type": "scaled_float", "scaling_factor": 1000 },
+                    "bytes": { "type": "long" }
+                  }
+                },
+                "total": { "type": "long" }
+              }
+            },
+            "network": {
+              "properties": {
+                "in": {
+                  "properties": {
+                    "bytes": { "type": "long" },
+                    "packets": { "type": "long" }
+                  }
+                },
+                "out": {
+                  "properties": {
+                    "bytes": { "type": "long" },
+                    "packets": { "type": "long" }
+                  }
+                }
+              }
+            },
+            "load": {
+              "properties": {
+                "1":  { "type": "half_float" },
+                "5":  { "type": "half_float" },
+                "15": { "type": "half_float" }
+              }
+            }
+          }
+        },
+        "zabbix": {
+          "properties": {
+            "host_id":    { "type": "keyword" },
+            "item_id":    { "type": "keyword" },
+            "item_key":   { "type": "keyword" },
+            "item_name":  { "type": "keyword" },
+            "group_name": { "type": "keyword" },
+            "trigger_id": { "type": "keyword" },
+            "value_type": { "type": "keyword" }
+          }
+        },
+        "tags":   { "type": "keyword" },
+        "labels": { "type": "object" }
+      }
+    }
+  },
+  "priority": 140,
+  "_meta": {
+    "description": "Zabbix metrics index template - time-series, ECS-aligned",
+    "phase": "phase2",
+    "version": "1.0.0"
+  }
+}

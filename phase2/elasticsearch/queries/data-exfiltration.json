@@ -1,0 +1,133 @@
+{
+  "_comment": "Data exfiltration: large outbound traffic > 1 GB in 5 minutes to unknown destinations",
+  "description": "Detects potential data exfiltration by monitoring unusual outbound traffic volumes",
+  "severity": "critical",
+  "mitre_tactic": "Exfiltration",
+  "mitre_technique": "T1048",
+
+  "query": {
+    "size": 0,
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "range": {
+              "@timestamp": {
+                "gte": "now-5m",
+                "lte": "now"
+              }
+            }
+          }
+        ],
+        "filter": [
+          { "exists": { "field": "destination.ip" } },
+          { "exists": { "field": "data.bytes_sent" } }
+        ],
+        "must_not": [
+          {
+            "terms": {
+              "destination.ip": [
+                "10.0.0.0/8",
+                "172.16.0.0/12",
+                "192.168.0.0/16",
+                "127.0.0.1"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "aggs": {
+      "by_source_host": {
+        "terms": {
+          "field": "host.name",
+          "size": 50
+        },
+        "aggs": {
+          "total_bytes_sent": {
+            "sum": { "field": "data.bytes_sent" }
+          },
+          "by_destination": {
+            "terms": {
+              "field": "destination.ip",
+              "size": 20
+            },
+            "aggs": {
+              "bytes_to_dest": {
+                "sum": { "field": "data.bytes_sent" }
+              }
+            }
+          },
+          "by_user": {
+            "terms": {
+              "field": "user.name",
+              "size": 10
+            }
+          },
+          "suspicious_destinations": {
+            "bucket_selector": {
+              "buckets_path": {
+                "totalBytes": "total_bytes_sent"
+              },
+              "script": "params.totalBytes > 1073741824"
+            }
+          }
+        }
+      },
+      "top_talkers": {
+        "top_hits": {
+          "size": 10,
+          "_source": ["host.name", "destination.ip", "data.bytes_sent", "user.name", "@timestamp"],
+          "sort": [{ "data.bytes_sent": { "order": "desc" } }]
+        }
+      }
+    }
+  },
+
+  "network_baseline_query": {
+    "_comment": "Compute 30-day baseline to detect deviations",
+    "description": "Average outbound bytes per host over 30 days",
+    "size": 0,
+    "query": {
+      "range": {
+        "@timestamp": { "gte": "now-30d", "lte": "now-1d" }
+      }
+    },
+    "aggs": {
+      "by_host": {
+        "terms": { "field": "host.name", "size": 100 },
+        "aggs": {
+          "daily_avg_bytes": {
+            "date_histogram": {
+              "field": "@timestamp",
+              "calendar_interval": "1d"
+            },
+            "aggs": {
+              "daily_bytes": { "sum": { "field": "data.bytes_sent" } }
+            }
+          },
+          "avg_daily": { "avg_bucket": { "buckets_path": "daily_avg_bytes>daily_bytes" } },
+          "max_daily": { "max_bucket": { "buckets_path": "daily_avg_bytes>daily_bytes" } }
+        }
+      }
+    }
+  },
+
+  "alert_condition": {
+    "bytes_threshold": 1073741824,
+    "window": "5m",
+    "field": "host.name",
+    "destination_check": "unknown_external"
+  },
+
+  "alert_action": {
+    "create_alert": true,
+    "tag_as": "data-exfiltration-suspected",
+    "severity": "critical",
+    "notify_soc": true,
+    "escalate_to_tier2": true,
+    "escalate_to_tier3": true,
+    "optional_block_connection": true,
+    "playbook": "docs/playbooks/data-exfiltration-response.md"
+  }
+}

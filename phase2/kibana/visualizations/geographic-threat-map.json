@@ -1,0 +1,21 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "geographic-threat-map",
+      "type": "visualization",
+      "attributes": {
+        "title": "Geographic Threat Origin Map",
+        "description": "World map showing source IPs of security events, bubble size represents event count",
+        "visState": "{\"title\":\"Geographic Threat Origin Map\",\"type\":\"tile_map\",\"params\":{\"colorSchema\":\"Yellow to Red\",\"mapType\":\"Heatmap\",\"isDesaturated\":false,\"addTooltip\":true,\"heatMaxZoom\":16,\"heatMinOpacity\":0.1,\"heatRadius\":25,\"heatBlur\":15,\"heatNormalizeData\":true,\"legendPosition\":\"bottomright\",\"mapZoom\":2,\"mapCenter\":[0,0],\"wms\":{\"enabled\":false,\"url\":\"\",\"options\":{\"version\":\"\",\"layers\":\"\",\"format\":\"image/png\",\"transparent\":true,\"attribution\":\"\",\"styles\":\"\"}}},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"geohash_grid\",\"schema\":\"segment\",\"params\":{\"field\":\"source.geo.location\",\"autoPrecision\":true,\"precision\":2,\"useGeocentroid\":true,\"mapZoom\":2,\"mapCenter\":{\"lat\":0,\"lon\":0}}}]}",
+        "uiStateJSON": "{\"mapZoom\":2,\"mapCenter\":[0,0]}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"\"},\"filter\":[{\"meta\":{\"alias\":null,\"negate\":false,\"disabled\":false,\"type\":\"exists\",\"key\":\"source.geo.location\"},\"exists\":{\"field\":\"source.geo.location\"}}],\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\"}"
+        }
+      },
+      "references": [
+        {"name": "kibanaSavedObjectMeta.searchSourceJSON.index", "type": "index-pattern", "id": "wazuh-alerts-*"}
+      ]
+    }
+  ]
+}

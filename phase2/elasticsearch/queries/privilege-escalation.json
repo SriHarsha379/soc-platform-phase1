@@ -1,0 +1,114 @@
+{
+  "_comment": "Privilege escalation: sudo usage or su success following failed authentication attempts",
+  "description": "Detects privilege escalation patterns - failed auth followed by successful sudo/su",
+  "severity": "high",
+  "mitre_tactic": "Privilege Escalation",
+  "mitre_technique": "T1548.003",
+
+  "query": {
+    "size": 0,
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "range": {
+              "@timestamp": {
+                "gte": "now-15m",
+                "lte": "now"
+              }
+            }
+          },
+          {
+            "bool": {
+              "should": [
+                { "terms": { "rule.id": ["5401", "5402", "5403", "5404", "5405", "5406"] } },
+                { "wildcard": { "event.action": "*sudo*" } },
+                { "wildcard": { "event.action": "*su*" } },
+                { "terms": { "rule.groups": ["sudo", "su"] } }
+              ],
+              "minimum_should_match": 1
+            }
+          }
+        ]
+      }
+    },
+    "aggs": {
+      "by_user": {
+        "terms": {
+          "field": "user.name",
+          "size": 50
+        },
+        "aggs": {
+          "by_host": {
+            "terms": {
+              "field": "host.name",
+              "size": 10
+            }
+          },
+          "escalation_events": {
+            "filter": {
+              "bool": {
+                "should": [
+                  { "match": { "event.outcome": "success" } },
+                  { "terms": { "rule.id": ["5402", "5406"] } }
+                ]
+              }
+            }
+          },
+          "failed_auth_before": {
+            "filter": {
+              "bool": {
+                "must": [
+                  { "match": { "event.outcome": "failure" } },
+                  {
+                    "range": {
+                      "@timestamp": {
+                        "gte": "now-15m",
+                        "lte": "now-1m"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "timeline": {
+            "date_histogram": {
+              "field": "@timestamp",
+              "fixed_interval": "1m"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "correlation_query": {
+    "_comment": "Find users with failed auth AND subsequent privilege escalation within 15 minutes",
+    "description": "Two-phase correlation: failed login then sudo success",
+    "phase1": {
+      "event": "failed_authentication",
+      "window": "15m"
+    },
+    "phase2": {
+      "event": "sudo_or_su_success",
+      "window_after_phase1": "15m"
+    },
+    "same_fields": ["user.name", "host.name"]
+  },
+
+  "alert_condition": {
+    "require_both_phases": true,
+    "window": "15m",
+    "field": "user.name"
+  },
+
+  "alert_action": {
+    "create_alert": true,
+    "tag_as": "privilege-escalation-detected",
+    "severity": "high",
+    "notify_soc": true,
+    "escalate_to_tier2": true,
+    "playbook": "docs/playbooks/privilege-escalation-response.md"
+  }
+}

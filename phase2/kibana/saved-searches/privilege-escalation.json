@@ -1,0 +1,21 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "privilege-escalation-search",
+      "type": "search",
+      "attributes": {
+        "title": "Privilege Escalation Events",
+        "description": "Sudo and su usage events for privilege escalation investigation",
+        "columns": ["@timestamp", "host.name", "user.name", "data.dstuser", "rule.description", "rule.level", "rule.groups"],
+        "sort": [["@timestamp", "desc"]],
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"rule.groups:(\\\"sudo\\\" OR \\\"su\\\" OR \\\"privilege-escalation\\\") OR rule.id:(5401 OR 5402 OR 5403 OR 100100 OR 100101 OR 100102)\"},\"filter\":[],\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\"}"
+        }
+      },
+      "references": [
+        {"name": "kibanaSavedObjectMeta.searchSourceJSON.index", "type": "index-pattern", "id": "wazuh-alerts-*"}
+      ]
+    }
+  ]
+}

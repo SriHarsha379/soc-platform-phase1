@@ -1,0 +1,21 @@
+{
+  "version": "8.11.0",
+  "objects": [
+    {
+      "id": "unauthorized-access-search",
+      "type": "search",
+      "attributes": {
+        "title": "Unauthorized Access Attempts",
+        "description": "Denied access attempts, forbidden actions, and blocked connections",
+        "columns": ["@timestamp", "host.name", "source.ip", "user.name", "event.action", "rule.description", "rule.level"],
+        "sort": [["@timestamp", "desc"]],
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"language\":\"kuery\",\"query\":\"(event.outcome:\\\"failure\\\" AND rule.level:>=7) OR rule.groups:\\\"access_denied\\\" OR rule.groups:\\\"firewall-block\\\"\"},\"filter\":[],\"indexRefName\":\"kibanaSavedObjectMeta.searchSourceJSON.index\"}"
+        }
+      },
+      "references": [
+        {"name": "kibanaSavedObjectMeta.searchSourceJSON.index", "type": "index-pattern", "id": "wazuh-alerts-*"}
+      ]
+    }
+  ]
+}

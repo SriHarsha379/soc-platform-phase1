@@ -1,58 +1,12 @@
-# ============================================================
-# Kibana Configuration - SOC Platform Phase 1
-# Location: /usr/share/kibana/config/kibana.yml
-# ============================================================
-
-# ── Server ─────────────────────────────────────────────────
 server.host: "0.0.0.0"
 server.port: 5601
 server.name: "soc-platform-kibana"
-server.publicBaseUrl: "http://localhost:5601"
-
-# ── Elasticsearch Connection ───────────────────────────────
 elasticsearch.hosts: ["http://elasticsearch:9200"]
 elasticsearch.username: "elastic"
-elasticsearch.password: "${ELASTIC_PASSWORD}"
-elasticsearch.requestTimeout: 90000
-elasticsearch.shardTimeout: 30000
-
-# ── Security ───────────────────────────────────────────────
-xpack.security.enabled: true
-xpack.security.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
-xpack.reporting.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
-xpack.encryptedSavedObjects.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
-
-# ── Logging ────────────────────────────────────────────────
-logging:
-  appenders:
-    file:
-      type: file
-      fileName: /usr/share/kibana/logs/kibana.log
-      layout:
-        type: json
-  root:
-    appenders: [default, file]
-    level: info
-
-# ── Telemetry (disable for on-prem) ───────────────────────
+elasticsearch.password: "elastic_secure_password"
+xpack.security.enabled: false
+xpack.monitoring.ui.container.elasticsearch.enabled: false
 telemetry.enabled: false
 telemetry.optIn: false
-
-# ── Monitoring ─────────────────────────────────────────────
-xpack.monitoring.enabled: true
-xpack.monitoring.ui.enabled: true
-
-# ── RBAC (Role-Based Access Control) ──────────────────────
-xpack.security.authc.providers:
-  basic.basic1:
-    order: 0
-
-# ── Index Management ───────────────────────────────────────
-# Default index pattern for Wazuh
-# Configured via Kibana UI or API post-deployment
-
-# ── Maps ───────────────────────────────────────────────────
 map.includeElasticMapsService: false
-
-# ── Fleet / Agent Management ──────────────────────────────
 xpack.fleet.enabled: false

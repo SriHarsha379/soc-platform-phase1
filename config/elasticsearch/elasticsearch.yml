@@ -20,7 +20,7 @@ transport.port: 9300
 discovery.type: single-node
 
 # ── Memory ─────────────────────────────────────────────────
-bootstrap.memory_lock: true
+bootstrap.memory_lock: false
 
 # ── Security (X-Pack) ──────────────────────────────────────
 xpack.security.enabled: true
@@ -31,21 +31,7 @@ xpack.security.authc.api_key.enabled: true
 # ── Monitoring ─────────────────────────────────────────────
 xpack.monitoring.collection.enabled: true
 
-# ── Index Management ───────────────────────────────────────
-# Default number of shards for new indices
-index.number_of_shards: 1
-index.number_of_replicas: 0
-
-# ── Index Lifecycle Management (ILM) ───────────────────────
-# Wazuh alerts index pattern retention
-# ILM policies are applied via Wazuh template
-
 # ── CORS (for Kibana) ──────────────────────────────────────
 http.cors.enabled: true
 http.cors.allow-origin: "*"
 http.cors.allow-headers: "Authorization, Content-Type, X-Requested-With"
-
-# ── Slow Log Settings ──────────────────────────────────────
-index.search.slowlog.threshold.query.warn: 10s
-index.search.slowlog.threshold.query.info: 5s
-index.indexing.slowlog.threshold.index.warn: 10s

@@ -11,6 +11,7 @@
 
 const esClient = require('../lib/elasticsearch');
 const prisma = require('../lib/prisma');
+const { analyzeEvent } = require('../lib/aiClient');
 
 // ── Defaults (overridable via environment variables) ─────────────────────────
 
@@ -105,6 +106,14 @@ async function ruleBruteForce() {
     const lastSeen = new Date(events[events.length - 1].timestamp);
     const severity = events.length >= 20 ? 'critical' : events.length >= 10 ? 'high' : 'medium';
 
+    // Score the event via the AI service (non-blocking – null if unavailable)
+    const aiResult = await analyzeEvent(
+      'login_attempt',
+      events.length,
+      BRUTE_FORCE_WINDOW_MIN,
+      ip
+    );
+
     // Upsert: if there is already an open incident for this IP and rule type,
     // update the event count and lastSeen rather than duplicating.
     const existing = await prisma.incident.findFirst({
@@ -122,7 +131,9 @@ async function ruleBruteForce() {
         data: {
           eventCount: events.length,
           lastSeen,
-          severity,
+          severity: aiResult ? aiResult.severity : severity,
+          riskScore: aiResult ? aiResult.risk_score : null,
+          aiReason: aiResult ? aiResult.reason : null,
           updatedAt: new Date(),
         },
       });
@@ -132,11 +143,13 @@ async function ruleBruteForce() {
         data: {
           title: `Brute-force attack detected from ${ip}`,
           description: `${events.length} failed authentication attempts detected from ${ip} within the last ${BRUTE_FORCE_WINDOW_MIN} minutes.`,
-          severity,
+          severity: aiResult ? aiResult.severity : severity,
           ruleType: 'brute_force',
           sourceIp: ip,
           affectedHost: events[0].agentName,
           eventCount: events.length,
+          riskScore: aiResult ? aiResult.risk_score : null,
+          aiReason: aiResult ? aiResult.reason : null,
           firstSeen,
           lastSeen,
         },
@@ -168,6 +181,9 @@ async function ruleTrafficSpike() {
   const firstSeen = new Date(logs[0].timestamp);
   const lastSeen = new Date(logs[logs.length - 1].timestamp);
 
+  // Score via AI service
+  const aiResult = await analyzeEvent('network_traffic', logs.length, TRAFFIC_SPIKE_WINDOW_MIN);
+
   const existing = await prisma.incident.findFirst({
     where: {
       ruleType: 'traffic_spike',
@@ -179,7 +195,14 @@ async function ruleTrafficSpike() {
   if (existing) {
     const updated = await prisma.incident.update({
       where: { id: existing.id },
-      data: { eventCount: logs.length, lastSeen, severity, updatedAt: new Date() },
+      data: {
+        eventCount: logs.length,
+        lastSeen,
+        severity: aiResult ? aiResult.severity : severity,
+        riskScore: aiResult ? aiResult.risk_score : null,
+        aiReason: aiResult ? aiResult.reason : null,
+        updatedAt: new Date(),
+      },
     });
     return [updated];
   }
@@ -188,9 +211,11 @@ async function ruleTrafficSpike() {
     data: {
       title: `Traffic spike: ${logs.length} events in ${TRAFFIC_SPIKE_WINDOW_MIN} minutes`,
       description: `Unusual event volume detected: ${logs.length} events processed in the last ${TRAFFIC_SPIKE_WINDOW_MIN} minutes (threshold: ${TRAFFIC_SPIKE_THRESHOLD}).`,
-      severity,
+      severity: aiResult ? aiResult.severity : severity,
       ruleType: 'traffic_spike',
       eventCount: logs.length,
+      riskScore: aiResult ? aiResult.risk_score : null,
+      aiReason: aiResult ? aiResult.reason : null,
       firstSeen,
       lastSeen,
     },

@@ -308,3 +308,35 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # ─────────────────────────────────────────
+  # SOC AI Anomaly Detection (Python FastAPI)
+  # ─────────────────────────────────────────
+  soc-ai:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: soc-ai
+    restart: unless-stopped
+    environment:
+      BASELINE_LOGIN_MEAN: ${BASELINE_LOGIN_MEAN:-2}
+      BASELINE_LOGIN_STD: ${BASELINE_LOGIN_STD:-1.5}
+      BASELINE_CPU_MEAN: ${BASELINE_CPU_MEAN:-40}
+      BASELINE_CPU_STD: ${BASELINE_CPU_STD:-20}
+      BASELINE_TRAFFIC_MEAN: ${BASELINE_TRAFFIC_MEAN:-100}
+      BASELINE_TRAFFIC_STD: ${BASELINE_TRAFFIC_STD:-50}
+      ANOMALY_SIGMA_THRESHOLD: ${ANOMALY_SIGMA_THRESHOLD:-2.0}
+    ports:
+      - "8000:8000"
+    networks:
+      - soc-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

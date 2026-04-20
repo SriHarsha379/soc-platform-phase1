@@ -16,6 +16,23 @@ function SeverityBadge({ severity }) {
   );
 }
 
+function RiskScoreBadge({ score }) {
+  if (score === null || score === undefined) {
+    return <span className="text-xs text-slate-400">—</span>;
+  }
+  const color =
+    score >= 80
+      ? 'bg-red-600 text-white'
+      : score >= 60
+        ? 'bg-orange-500 text-white'
+        : score >= 35
+          ? 'bg-yellow-400 text-slate-900'
+          : 'bg-green-100 text-green-800';
+  return (
+    <span className={`rounded px-2 py-0.5 text-xs font-bold tabular-nums ${color}`}>{score}</span>
+  );
+}
+
 export default function DashboardPage() {
   const [alerts, setAlerts] = useState([]);
   const [incidents, setIncidents] = useState([]);
@@ -129,6 +146,7 @@ export default function DashboardPage() {
                 <th className="px-3 py-2">Rule Type</th>
                 <th className="px-3 py-2">Source IP</th>
                 <th className="px-3 py-2">Events</th>
+                <th className="px-3 py-2">Risk</th>
                 <th className="px-3 py-2">Last Seen</th>
               </tr>
             </thead>
@@ -142,6 +160,9 @@ export default function DashboardPage() {
                   <td className="px-3 py-2 text-slate-600">{inc.ruleType.replace('_', ' ')}</td>
                   <td className="px-3 py-2 font-mono text-xs">{inc.sourceIp || '-'}</td>
                   <td className="px-3 py-2 text-right">{inc.eventCount}</td>
+                  <td className="px-3 py-2">
+                    <RiskScoreBadge score={inc.riskScore} />
+                  </td>
                   <td className="px-3 py-2 text-xs text-slate-500">
                     {new Date(inc.lastSeen).toLocaleString()}
                   </td>
@@ -149,7 +170,7 @@ export default function DashboardPage() {
               ))}
               {incidents.length === 0 && (
                 <tr>
-                  <td className="px-3 py-4 text-slate-500" colSpan={6}>
+                  <td className="px-3 py-4 text-slate-500" colSpan={7}>
                     No open incidents.
                   </td>
                 </tr>

@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const logRoutes = require('./routes/logs');
 const incidentRoutes = require('./routes/incidents');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/incidents', incidentRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.use((err, req, res, next) => {
   if (res.headersSent) {

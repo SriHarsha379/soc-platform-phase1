@@ -28,6 +28,23 @@ function StatusBadge({ status }) {
   );
 }
 
+function RiskScoreBadge({ score }) {
+  if (score === null || score === undefined) {
+    return <span className="text-xs text-slate-400">—</span>;
+  }
+  const color =
+    score >= 80
+      ? 'bg-red-600 text-white'
+      : score >= 60
+        ? 'bg-orange-500 text-white'
+        : score >= 35
+          ? 'bg-yellow-400 text-slate-900'
+          : 'bg-green-100 text-green-800';
+  return (
+    <span className={`rounded px-2 py-0.5 text-xs font-bold tabular-nums ${color}`}>{score}</span>
+  );
+}
+
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState([]);
   const [total, setTotal] = useState(0);
@@ -173,6 +190,7 @@ export default function IncidentsPage() {
                   <th className="px-3 py-2">Source IP</th>
                   <th className="px-3 py-2">Host</th>
                   <th className="px-3 py-2">Events</th>
+                  <th className="px-3 py-2">Risk</th>
                   <th className="px-3 py-2">Status</th>
                   <th className="px-3 py-2">Last Seen</th>
                   <th className="px-3 py-2">Actions</th>
@@ -187,11 +205,17 @@ export default function IncidentsPage() {
                     <td className="max-w-xs px-3 py-2">
                       <p className="font-medium text-slate-900">{inc.title}</p>
                       <p className="mt-0.5 text-xs text-slate-500">{inc.description}</p>
+                      {inc.aiReason && (
+                        <p className="mt-0.5 text-xs italic text-indigo-500">{inc.aiReason}</p>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-slate-700">{inc.ruleType.replace('_', ' ')}</td>
                     <td className="px-3 py-2 font-mono text-xs">{inc.sourceIp || '-'}</td>
                     <td className="px-3 py-2">{inc.affectedHost || '-'}</td>
                     <td className="px-3 py-2 text-right">{inc.eventCount}</td>
+                    <td className="px-3 py-2">
+                      <RiskScoreBadge score={inc.riskScore} />
+                    </td>
                     <td className="px-3 py-2">
                       <StatusBadge status={inc.status} />
                     </td>
@@ -224,7 +248,7 @@ export default function IncidentsPage() {
                 ))}
                 {incidents.length === 0 && (
                   <tr>
-                    <td className="px-3 py-6 text-slate-500" colSpan={9}>
+                    <td className="px-3 py-6 text-slate-500" colSpan={10}>
                       No incidents match the current filters.
                     </td>
                   </tr>

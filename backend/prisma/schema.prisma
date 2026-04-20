@@ -47,6 +47,8 @@ model Incident {
   sourceIp     String?
   affectedHost String?
   eventCount   Int      @default(1)
+  riskScore    Int?     // 0–100 AI-derived risk score (null if AI service unavailable)
+  aiReason     String?  // Human-readable explanation from the AI service
   firstSeen    DateTime
   lastSeen     DateTime
   createdAt    DateTime @default(now())

@@ -37,8 +37,8 @@ node_modules/
 dist/
 build/
 .vite/
-backend/prisma/*.db
-backend/prisma/*.db-journal
+backend/prisma/**/*.db
+backend/prisma/**/*.db-journal
 
 # Editor
 .vscode/

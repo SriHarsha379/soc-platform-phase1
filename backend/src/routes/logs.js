@@ -1,10 +1,11 @@
 const express = require('express');
 const esClient = require('../lib/elasticsearch');
 const requireAuth = require('../middleware/auth');
+const { authenticatedRouteLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
-router.get('/', requireAuth(['admin', 'analyst']), async (req, res) => {
+router.get('/', authenticatedRouteLimiter, requireAuth(['admin', 'analyst']), async (req, res) => {
   const {
     q = '',
     level,

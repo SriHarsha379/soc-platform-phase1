@@ -1,10 +1,11 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const requireAuth = require('../middleware/auth');
+const { authenticatedRouteLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
-router.get('/', requireAuth(['admin', 'analyst']), async (req, res) => {
+router.get('/', authenticatedRouteLimiter, requireAuth(['admin', 'analyst']), async (req, res) => {
   const { severity, status, take = '50', skip = '0' } = req.query;
 
   const where = {};

@@ -59,6 +59,39 @@ chmod +x scripts/*.sh tests/*.sh
 
 ---
 
+## 🖥 SOC Dashboard Scaffold (Backend + Frontend)
+
+This repository now includes a full-stack scaffold under:
+
+- `backend/` (Express + Prisma + JWT + Elasticsearch integration)
+- `frontend/` (React + Tailwind dashboard UI)
+
+### Run Backend
+
+```bash
+cd backend
+cp .env.example .env
+npm install
+npx prisma migrate dev --name init
+npm run db:seed
+npm run dev
+```
+
+Backend API: `http://localhost:4000`
+
+### Run Frontend
+
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+Frontend UI: `http://localhost:5173`
+
+---
+
 ## 🧩 Stack
 
 | Component | Tool | Version | Purpose |

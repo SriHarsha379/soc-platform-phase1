@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      String   @default("analyst")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Alert {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  severity    String
+  status      String   @default("open")
+  source      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LogMeta {
+  id          Int      @id @default(autoincrement())
+  logType     String
+  source      String
+  severity    String?
+  referenceId String?
+  timestamp   DateTime
+  createdAt   DateTime @default(now())
+}

@@ -36,3 +36,19 @@ model LogMeta {
   timestamp   DateTime
   createdAt   DateTime @default(now())
 }
+
+model Incident {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String
+  severity     String   // low | medium | high | critical
+  ruleType     String   // brute_force | traffic_spike | custom
+  status       String   @default("open") // open | investigating | resolved
+  sourceIp     String?
+  affectedHost String?
+  eventCount   Int      @default(1)
+  firstSeen    DateTime
+  lastSeen     DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

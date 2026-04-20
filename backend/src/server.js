@@ -5,6 +5,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const alertRoutes = require('./routes/alerts');
 const logRoutes = require('./routes/logs');
+const incidentRoutes = require('./routes/incidents');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/incidents', incidentRoutes);
 
 app.use((err, req, res, next) => {
   if (res.headersSent) {

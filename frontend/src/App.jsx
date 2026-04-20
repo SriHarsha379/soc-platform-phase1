@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import LogsPage from './pages/LogsPage';
+import IncidentsPage from './pages/IncidentsPage';
 
 export default function App() {
   const token = localStorage.getItem('soc_token');
@@ -66,6 +67,16 @@ export default function App() {
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <Layout user={user}>
                 <LogsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/incidents"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Layout user={user}>
+                <IncidentsPage />
               </Layout>
             </ProtectedRoute>
           }

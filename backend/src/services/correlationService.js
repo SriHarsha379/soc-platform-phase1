@@ -12,6 +12,7 @@
 const esClient = require('../lib/elasticsearch');
 const prisma = require('../lib/prisma');
 const { analyzeEvent } = require('../lib/aiClient');
+const { triggerPlaybooks } = require('../lib/soarClient');
 
 // ── Defaults (overridable via environment variables) ─────────────────────────
 
@@ -228,6 +229,7 @@ async function ruleTrafficSpike() {
 
 /**
  * Run all correlation rules and return the list of created/updated incidents.
+ * Newly produced incidents are forwarded to the SOAR engine (fire-and-forget).
  */
 async function runCorrelation() {
   const [bruteForceIncidents, spikeIncidents] = await Promise.all([
@@ -235,7 +237,14 @@ async function runCorrelation() {
     ruleTrafficSpike(),
   ]);
 
-  return [...bruteForceIncidents, ...spikeIncidents];
+  const allIncidents = [...bruteForceIncidents, ...spikeIncidents];
+
+  // Fire SOAR playbooks for each incident (non-blocking – failures are ignored)
+  for (const incident of allIncidents) {
+    triggerPlaybooks(incident).catch(() => {});
+  }
+
+  return allIncidents;
 }
 
 module.exports = { runCorrelation, normalizeLog };

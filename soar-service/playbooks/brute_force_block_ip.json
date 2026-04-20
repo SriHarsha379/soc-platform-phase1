@@ -1,0 +1,30 @@
+{
+  "id": "brute_force_block_ip",
+  "name": "Brute Force – Block Source IP",
+  "description": "Blocks the source IP via iptables and sends an email alert when a brute-force incident is detected.",
+  "enabled": true,
+  "trigger": {
+    "rule_type": "brute_force",
+    "min_severity": "medium"
+  },
+  "conditions": [
+    { "field": "eventCount", "operator": "gte", "value": 5 }
+  ],
+  "actions": [
+    {
+      "type": "block_ip",
+      "params": {
+        "ip": "{{sourceIp}}",
+        "duration_seconds": 3600,
+        "comment": "SOC auto-block: brute force"
+      }
+    },
+    {
+      "type": "send_email",
+      "params": {
+        "subject": "🚨 Brute Force Blocked: {{sourceIp}}",
+        "body": "SOAR automatically blocked {{sourceIp}} after {{eventCount}} failed login attempts on {{affectedHost}}.\n\nIncident: {{title}}\nSeverity: {{severity}}\nFirst seen: {{firstSeen}}\nLast seen: {{lastSeen}}"
+      }
+    }
+  ]
+}

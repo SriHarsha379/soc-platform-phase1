@@ -1,0 +1,28 @@
+{
+  "id": "traffic_spike_alert",
+  "name": "Traffic Spike – Email and Telegram Alert",
+  "description": "Sends an email and Telegram alert when a traffic spike incident is detected.",
+  "enabled": true,
+  "trigger": {
+    "rule_type": "traffic_spike",
+    "min_severity": "medium"
+  },
+  "conditions": [
+    { "field": "eventCount", "operator": "gte", "value": 500 }
+  ],
+  "actions": [
+    {
+      "type": "send_email",
+      "params": {
+        "subject": "⚠️ Traffic Spike Detected: {{eventCount}} events",
+        "body": "A traffic spike has been detected on your SOC platform.\n\nIncident: {{title}}\nSeverity: {{severity}}\nEvent count: {{eventCount}}\nFirst seen: {{firstSeen}}\nLast seen: {{lastSeen}}"
+      }
+    },
+    {
+      "type": "send_telegram",
+      "params": {
+        "message": "⚠️ SOC Alert – Traffic Spike\nEvents: {{eventCount}}\nSeverity: {{severity}}\nLast seen: {{lastSeen}}"
+      }
+    }
+  ]
+}

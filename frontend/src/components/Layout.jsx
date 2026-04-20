@@ -25,6 +25,9 @@ export default function Layout({ user, children }) {
             <NavLink to="/incidents" className={navClass}>
               Incidents
             </NavLink>
+            <NavLink to="/playbooks" className={navClass}>
+              Playbooks
+            </NavLink>
             <NavLink to="/logs" className={navClass}>
               Logs
             </NavLink>

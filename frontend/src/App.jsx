@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import LogsPage from './pages/LogsPage';
 import IncidentsPage from './pages/IncidentsPage';
+import PlaybooksPage from './pages/PlaybooksPage';
 
 export default function App() {
   const token = localStorage.getItem('soc_token');
@@ -77,6 +78,16 @@ export default function App() {
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <Layout user={user}>
                 <IncidentsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/playbooks"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Layout user={user}>
+                <PlaybooksPage />
               </Layout>
             </ProtectedRoute>
           }

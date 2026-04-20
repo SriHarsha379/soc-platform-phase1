@@ -97,8 +97,8 @@ export default function IncidentsPage() {
       setIncidents((prev) =>
         prev.map((inc) => (inc.id === id ? { ...inc, status } : inc))
       );
-    } catch {
-      // ignore
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Failed to update incident status');
     }
   };
 

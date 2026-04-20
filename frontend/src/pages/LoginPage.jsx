@@ -4,7 +4,7 @@ import api from '../api/client';
 
 export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '', tenantSlug: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +19,12 @@ export default function LoginPage({ onLogin }) {
     setLoading(true);
 
     try {
-      const response = await api.post('/api/auth/login', form);
+      const payload = {
+        email: form.email,
+        password: form.password,
+        ...(form.tenantSlug ? { tenantSlug: form.tenantSlug } : {}),
+      };
+      const response = await api.post('/api/auth/login', payload);
       localStorage.setItem('soc_token', response.data.token);
       onLogin(response.data.user);
       navigate('/dashboard');
@@ -35,6 +40,19 @@ export default function LoginPage({ onLogin }) {
       <form onSubmit={handleSubmit} className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
         <h1 className="mb-1 text-2xl font-semibold text-slate-900">SOC Login</h1>
         <p className="mb-6 text-sm text-slate-600">Sign in with an admin or analyst account.</p>
+
+        <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="tenantSlug">
+          Tenant <span className="font-normal text-slate-400">(optional — leave blank for default)</span>
+        </label>
+        <input
+          id="tenantSlug"
+          name="tenantSlug"
+          type="text"
+          value={form.tenantSlug}
+          onChange={handleChange}
+          placeholder="e.g. acme"
+          className="mb-4 w-full rounded border border-slate-300 px-3 py-2 outline-none focus:border-blue-600"
+        />
 
         <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="email">
           Email

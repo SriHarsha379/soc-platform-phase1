@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import LogsPage from './pages/LogsPage';
 import IncidentsPage from './pages/IncidentsPage';
 import PlaybooksPage from './pages/PlaybooksPage';
+import AdminPage from './pages/AdminPage';
 
 export default function App() {
   const token = localStorage.getItem('soc_token');
@@ -21,7 +22,10 @@ export default function App() {
 
     api
       .get('/api/auth/me')
-      .then((response) => setUser(response.data))
+      .then((response) => {
+        // /me now returns tenant info too
+        setUser(response.data);
+      })
       .catch(() => {
         localStorage.removeItem('soc_token');
         setUser(null);
@@ -34,6 +38,7 @@ export default function App() {
   }
 
   const isAuthenticated = Boolean(user);
+  const isAdminOrAbove = user?.role === 'admin' || user?.role === 'super_admin';
 
   return (
     <BrowserRouter>
@@ -88,6 +93,16 @@ export default function App() {
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <Layout user={user}>
                 <PlaybooksPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated && isAdminOrAbove}>
+              <Layout user={user}>
+                <AdminPage user={user} />
               </Layout>
             </ProtectedRoute>
           }

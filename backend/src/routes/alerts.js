@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', authenticatedRouteLimiter, requireAuth(['admin', 'analyst']), async (req, res) => {
   const { severity, status, take = '50', skip = '0' } = req.query;
 
-  const where = {};
+  const where = { tenantId: req.user.tenantId };
   if (severity) where.severity = severity;
   if (status) where.status = status;
 

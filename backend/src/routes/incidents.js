@@ -19,7 +19,7 @@ router.get('/', authenticatedRouteLimiter, requireAuth(['admin', 'analyst']), as
     skip = '0',
   } = req.query;
 
-  const where = {};
+  const where = { tenantId: req.user.tenantId };
 
   if (severity) where.severity = severity;
   if (status) where.status = status;
@@ -50,7 +50,7 @@ router.post(
   authenticatedRouteLimiter,
   requireAuth(['admin']),
   async (req, res) => {
-    const results = await runCorrelation();
+    const results = await runCorrelation(req.user.tenantId);
     return res.json({
       triggered: results.length,
       incidents: results,
@@ -72,9 +72,13 @@ router.patch(
       return res.status(400).json({ error: `status must be one of: ${allowed.join(', ')}` });
     }
 
+    // Enforce tenant isolation: only update incidents belonging to the caller's tenant
     const incident = await prisma.incident.findUnique({ where: { id } });
     if (!incident) {
       return res.status(404).json({ error: 'Incident not found' });
+    }
+    if (incident.tenantId !== req.user.tenantId) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const updated = await prisma.incident.update({

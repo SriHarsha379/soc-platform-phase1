@@ -4,21 +4,51 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
+  // ── Default tenant ───────────────────────────────────────────────────────
+  let defaultTenant = await prisma.tenant.findUnique({ where: { slug: 'default' } });
+  if (!defaultTenant) {
+    defaultTenant = await prisma.tenant.create({
+      data: { id: 1, name: 'Default Tenant', slug: 'default' },
+    });
+    console.log('Created default tenant (id=1)');
+  }
+
+  // ── Demo tenant (acme) ───────────────────────────────────────────────────
+  let acmeTenant = await prisma.tenant.findUnique({ where: { slug: 'acme' } });
+  if (!acmeTenant) {
+    acmeTenant = await prisma.tenant.create({
+      data: { name: 'Acme Corp', slug: 'acme' },
+    });
+    console.log('Created demo tenant: acme');
+  }
+
+  // ── Users ────────────────────────────────────────────────────────────────
   const users = [
-    { email: 'admin@soc.local', password: 'Admin@123', role: 'admin' },
-    { email: 'analyst@soc.local', password: 'Analyst@123', role: 'analyst' },
+    // Default tenant users
+    { email: 'superadmin@soc.local', password: 'SuperAdmin@123', role: 'super_admin', tenantId: 1 },
+    { email: 'admin@soc.local', password: 'Admin@123', role: 'admin', tenantId: 1 },
+    { email: 'analyst@soc.local', password: 'Analyst@123', role: 'analyst', tenantId: 1 },
+    // Acme tenant users
+    { email: 'admin@acme.local', password: 'AcmeAdmin@123', role: 'admin', tenantId: acmeTenant.id },
+    { email: 'analyst@acme.local', password: 'AcmeAnalyst@123', role: 'analyst', tenantId: acmeTenant.id },
   ];
 
   for (const user of users) {
     const hashedPassword = await bcrypt.hash(user.password, 10);
     await prisma.user.upsert({
-      where: { email: user.email },
+      where: { email_tenantId: { email: user.email, tenantId: user.tenantId } },
       update: { role: user.role, password: hashedPassword },
-      create: { email: user.email, role: user.role, password: hashedPassword },
+      create: {
+        email: user.email,
+        role: user.role,
+        password: hashedPassword,
+        tenantId: user.tenantId,
+      },
     });
   }
 
-  const alertCount = await prisma.alert.count();
+  // ── Alerts ───────────────────────────────────────────────────────────────
+  const alertCount = await prisma.alert.count({ where: { tenantId: 1 } });
   if (alertCount === 0) {
     await prisma.alert.createMany({
       data: [
@@ -28,6 +58,7 @@ async function main() {
           severity: 'high',
           status: 'open',
           source: 'zabbix',
+          tenantId: 1,
         },
         {
           title: 'Multiple failed SSH logins',
@@ -35,12 +66,30 @@ async function main() {
           severity: 'critical',
           status: 'investigating',
           source: 'wazuh',
+          tenantId: 1,
         },
       ],
     });
   }
 
-  const logMetaCount = await prisma.logMeta.count();
+  const acmeAlertCount = await prisma.alert.count({ where: { tenantId: acmeTenant.id } });
+  if (acmeAlertCount === 0) {
+    await prisma.alert.createMany({
+      data: [
+        {
+          title: '[Acme] Suspicious login from unknown IP',
+          description: 'Login detected from an IP not in the allowlist',
+          severity: 'medium',
+          status: 'open',
+          source: 'wazuh',
+          tenantId: acmeTenant.id,
+        },
+      ],
+    });
+  }
+
+  // ── LogMeta ──────────────────────────────────────────────────────────────
+  const logMetaCount = await prisma.logMeta.count({ where: { tenantId: 1 } });
   if (logMetaCount === 0) {
     await prisma.logMeta.createMany({
       data: [
@@ -50,6 +99,7 @@ async function main() {
           severity: 'warning',
           referenceId: 'sample-auth-001',
           timestamp: new Date(),
+          tenantId: 1,
         },
         {
           logType: 'system',
@@ -57,6 +107,7 @@ async function main() {
           severity: 'info',
           referenceId: 'sample-system-001',
           timestamp: new Date(),
+          tenantId: 1,
         },
       ],
     });
@@ -64,7 +115,8 @@ async function main() {
 
   console.log('Seed complete: default users and sample alerts/log metadata created.');
 
-  const incidentCount = await prisma.incident.count();
+  // ── Incidents ────────────────────────────────────────────────────────────
+  const incidentCount = await prisma.incident.count({ where: { tenantId: 1 } });
   if (incidentCount === 0) {
     const now = new Date();
     await prisma.incident.createMany({
@@ -78,6 +130,7 @@ async function main() {
           sourceIp: '203.0.113.42',
           affectedHost: 'web-01',
           eventCount: 12,
+          tenantId: 1,
           firstSeen: new Date(now.getTime() - 15 * 60 * 1000),
           lastSeen: new Date(now.getTime() - 5 * 60 * 1000),
         },
@@ -90,6 +143,7 @@ async function main() {
           sourceIp: '198.51.100.7',
           affectedHost: 'db-01',
           eventCount: 23,
+          tenantId: 1,
           firstSeen: new Date(now.getTime() - 30 * 60 * 1000),
           lastSeen: new Date(now.getTime() - 2 * 60 * 1000),
         },
@@ -100,6 +154,7 @@ async function main() {
           ruleType: 'traffic_spike',
           status: 'open',
           eventCount: 620,
+          tenantId: 1,
           firstSeen: new Date(now.getTime() - 6 * 60 * 1000),
           lastSeen: new Date(now.getTime() - 1 * 60 * 1000),
         },
@@ -112,8 +167,31 @@ async function main() {
           sourceIp: '10.0.0.55',
           affectedHost: 'app-01',
           eventCount: 7,
+          tenantId: 1,
           firstSeen: new Date(now.getTime() - 120 * 60 * 1000),
           lastSeen: new Date(now.getTime() - 100 * 60 * 1000),
+        },
+      ],
+    });
+  }
+
+  const acmeIncidentCount = await prisma.incident.count({ where: { tenantId: acmeTenant.id } });
+  if (acmeIncidentCount === 0) {
+    const now = new Date();
+    await prisma.incident.createMany({
+      data: [
+        {
+          title: '[Acme] Port scan detected from 10.20.30.40',
+          description: 'Rapid connection attempts to multiple ports from 10.20.30.40.',
+          severity: 'high',
+          ruleType: 'brute_force',
+          status: 'open',
+          sourceIp: '10.20.30.40',
+          affectedHost: 'acme-fw-01',
+          eventCount: 8,
+          tenantId: acmeTenant.id,
+          firstSeen: new Date(now.getTime() - 20 * 60 * 1000),
+          lastSeen: new Date(now.getTime() - 10 * 60 * 1000),
         },
       ],
     });

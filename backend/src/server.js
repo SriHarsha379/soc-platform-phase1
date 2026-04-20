@@ -8,6 +8,7 @@ const logRoutes = require('./routes/logs');
 const incidentRoutes = require('./routes/incidents');
 const aiRoutes = require('./routes/ai');
 const soarRoutes = require('./routes/soar');
+const tenantRoutes = require('./routes/tenants');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/logs', logRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/soar', soarRoutes);
+app.use('/api/tenants', tenantRoutes);
 
 app.use((err, req, res, next) => {
   if (res.headersSent) {

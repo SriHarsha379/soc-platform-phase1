@@ -21,6 +21,8 @@ const BRUTE_FORCE_WINDOW_MIN = Number(process.env.CORRELATION_BRUTE_FORCE_WINDOW
 const TRAFFIC_SPIKE_THRESHOLD = Number(process.env.CORRELATION_TRAFFIC_SPIKE_THRESHOLD) || 500;
 const TRAFFIC_SPIKE_WINDOW_MIN = Number(process.env.CORRELATION_TRAFFIC_SPIKE_WINDOW_MIN) || 5;
 const ES_INDEX = process.env.ELASTIC_INDEX || 'wazuh-alerts-*';
+// Default tenant for correlation runs triggered outside of an HTTP request context
+const DEFAULT_TENANT_ID = Number(process.env.CORRELATION_DEFAULT_TENANT_ID) || 1;
 
 // ── Log normalisation ─────────────────────────────────────────────────────────
 
@@ -75,7 +77,7 @@ async function fetchRecentLogs(windowMinutes, extraFilters = []) {
  * If an IP exceeds the threshold within the window it creates (or updates) an
  * open incident.
  */
-async function ruleBruteForce() {
+async function ruleBruteForce(tenantId) {
   const logs = await fetchRecentLogs(BRUTE_FORCE_WINDOW_MIN, [
     {
       terms: {
@@ -121,6 +123,7 @@ async function ruleBruteForce() {
       where: {
         ruleType: 'brute_force',
         sourceIp: ip,
+        tenantId,
         status: { in: ['open', 'investigating'] },
       },
       orderBy: { createdAt: 'desc' },
@@ -151,6 +154,7 @@ async function ruleBruteForce() {
           eventCount: events.length,
           riskScore: aiResult ? aiResult.risk_score : null,
           aiReason: aiResult ? aiResult.reason : null,
+          tenantId,
           firstSeen,
           lastSeen,
         },
@@ -168,7 +172,7 @@ async function ruleBruteForce() {
  * Counts all events in the window. If the total exceeds the threshold, a
  * single traffic-spike incident is created (or the existing open one updated).
  */
-async function ruleTrafficSpike() {
+async function ruleTrafficSpike(tenantId) {
   const logs = await fetchRecentLogs(TRAFFIC_SPIKE_WINDOW_MIN);
 
   if (logs.length < TRAFFIC_SPIKE_THRESHOLD) return [];
@@ -188,6 +192,7 @@ async function ruleTrafficSpike() {
   const existing = await prisma.incident.findFirst({
     where: {
       ruleType: 'traffic_spike',
+      tenantId,
       status: { in: ['open', 'investigating'] },
     },
     orderBy: { createdAt: 'desc' },
@@ -217,6 +222,7 @@ async function ruleTrafficSpike() {
       eventCount: logs.length,
       riskScore: aiResult ? aiResult.risk_score : null,
       aiReason: aiResult ? aiResult.reason : null,
+      tenantId,
       firstSeen,
       lastSeen,
     },
@@ -230,11 +236,14 @@ async function ruleTrafficSpike() {
 /**
  * Run all correlation rules and return the list of created/updated incidents.
  * Newly produced incidents are forwarded to the SOAR engine (fire-and-forget).
+ *
+ * @param {number} [tenantId] - Scope correlation to a specific tenant.
+ *   Defaults to DEFAULT_TENANT_ID if omitted.
  */
-async function runCorrelation() {
+async function runCorrelation(tenantId = DEFAULT_TENANT_ID) {
   const [bruteForceIncidents, spikeIncidents] = await Promise.all([
-    ruleBruteForce(),
-    ruleTrafficSpike(),
+    ruleBruteForce(tenantId),
+    ruleTrafficSpike(tenantId),
   ]);
 
   const allIncidents = [...bruteForceIncidents, ...spikeIncidents];

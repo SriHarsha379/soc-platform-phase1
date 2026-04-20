@@ -11,13 +11,22 @@ export default function Layout({ user, children }) {
     navigate('/login');
   };
 
+  const isAdminOrAbove = user?.role === 'admin' || user?.role === 'super_admin';
+
   return (
     <div className="min-h-screen bg-slate-100">
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link to="/dashboard" className="text-lg font-semibold text-slate-900">
-            SOC Dashboard
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard" className="text-lg font-semibold text-slate-900">
+              SOC Dashboard
+            </Link>
+            {user?.tenantName && (
+              <span className="hidden rounded bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 md:inline">
+                {user.tenantName}
+              </span>
+            )}
+          </div>
           <nav className="flex items-center gap-2">
             <NavLink to="/dashboard" className={navClass}>
               Dashboard
@@ -31,6 +40,11 @@ export default function Layout({ user, children }) {
             <NavLink to="/logs" className={navClass}>
               Logs
             </NavLink>
+            {isAdminOrAbove && (
+              <NavLink to="/admin" className={navClass}>
+                Admin
+              </NavLink>
+            )}
             <span className="ml-3 hidden rounded bg-slate-100 px-2 py-1 text-xs uppercase text-slate-600 md:inline">
               {user?.role || 'unknown'}
             </span>

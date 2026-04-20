@@ -4,7 +4,7 @@ import api from '../api/client';
 
 export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: 'admin@soc.local', password: 'Admin@123' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

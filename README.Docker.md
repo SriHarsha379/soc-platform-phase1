@@ -78,10 +78,11 @@ docker compose -f docker-compose.app.yml down -v
 
 | Email | Password | Role | Tenant |
 |---|---|---|---|
-| `superadmin@soc.local` | `Admin1234!` | super_admin | default |
-| `admin@soc.local` | `Admin1234!` | admin | default |
-| `admin@acme.local` | `Admin1234!` | admin | acme |
-| `analyst@acme.local` | `Analyst1234!` | analyst | acme |
+| `superadmin@soc.local` | `SuperAdmin@123` | super_admin | default |
+| `admin@soc.local` | `Admin@123` | admin | default |
+| `analyst@soc.local` | `Analyst@123` | analyst | default |
+| `admin@acme.local` | `AcmeAdmin@123` | admin | acme |
+| `analyst@acme.local` | `AcmeAnalyst@123` | analyst | acme |
 
 > ⚠️ Change all passwords before deploying to a public environment.
 

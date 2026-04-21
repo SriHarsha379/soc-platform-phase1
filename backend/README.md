@@ -4,7 +4,7 @@
 
 - JWT authentication (`POST /api/auth/login`)
 - Role-based access (`admin`, `analyst`)
-- Alerts API from SQLite via Prisma (`GET /api/alerts`)
+- Alerts API from PostgreSQL via Prisma (`GET /api/alerts`)
 - Logs API from Elasticsearch with search/filter (`GET /api/logs`)
 
 ## Setup

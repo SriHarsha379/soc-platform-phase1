@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Multi-tenancy ─────────────────────────────────────────────────────────────
+
+model Tenant {
+  id        Int        @id @default(autoincrement())
+  name      String
+  slug      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  users     User[]
+  alerts    Alert[]
+  logMeta   LogMeta[]
+  incidents Incident[]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String
+  password  String
+  role      String   @default("analyst") // analyst | admin | super_admin
+  tenantId  Int      @default(1)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, tenantId])
+}
+
+model Alert {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  severity    String
+  status      String   @default("open")
+  source      String?
+  tenantId    Int      @default(1)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LogMeta {
+  id          Int      @id @default(autoincrement())
+  logType     String
+  source      String
+  severity    String?
+  referenceId String?
+  timestamp   DateTime
+  tenantId    Int      @default(1)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Incident {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String
+  severity     String   // low | medium | high | critical
+  ruleType     String   // brute_force | traffic_spike | custom
+  status       String   @default("open") // open | investigating | resolved
+  sourceIp     String?
+  affectedHost String?
+  eventCount   Int      @default(1)
+  riskScore    Int?     // 0–100 AI-derived risk score (null if AI service unavailable)
+  aiReason     String?  // Human-readable explanation from the AI service
+  tenantId     Int      @default(1)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  firstSeen    DateTime
+  lastSeen     DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

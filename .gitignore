@@ -32,6 +32,14 @@ __pycache__/
 .Python
 alerting/__pycache__/
 
+# Node.js
+node_modules/
+dist/
+build/
+.vite/
+backend/prisma/**/*.db
+backend/prisma/**/*.db-journal
+
 # Editor
 .vscode/
 .idea/

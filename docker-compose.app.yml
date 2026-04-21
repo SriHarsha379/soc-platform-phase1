@@ -1,0 +1,247 @@
+version: '3.8'
+
+# ============================================================
+# SOC Platform – Application Stack
+# Includes: PostgreSQL, Elasticsearch, Backend, Frontend,
+#           AI service, SOAR service, Nginx reverse proxy
+#
+# Usage:
+#   Build:   docker compose -f docker-compose.app.yml build
+#   Start:   docker compose -f docker-compose.app.yml up -d
+#   Logs:    docker compose -f docker-compose.app.yml logs -f
+#   Restart: docker compose -f docker-compose.app.yml restart
+#   Stop:    docker compose -f docker-compose.app.yml down
+#   Destroy: docker compose -f docker-compose.app.yml down -v
+# ============================================================
+
+networks:
+  soc-app-network:
+    driver: bridge
+
+volumes:
+  soc-postgres-data:
+  soc-es-data:
+  soc-soar-data:
+
+services:
+
+  # ─────────────────────────────────────────
+  # PostgreSQL (SOC application database)
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: soc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${SOC_DB_USER:-soc_user}
+      POSTGRES_PASSWORD: ${SOC_DB_PASSWORD:-soc_password}
+      POSTGRES_DB: ${SOC_DB_NAME:-soc_db}
+    volumes:
+      - soc-postgres-data:/var/lib/postgresql/data
+    networks:
+      - soc-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SOC_DB_USER:-soc_user} -d ${SOC_DB_NAME:-soc_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Elasticsearch (log/alert storage)
+  # ─────────────────────────────────────────
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.11.0}
+    container_name: soc-elasticsearch
+    restart: unless-stopped
+    environment:
+      - node.name=soc-es-node
+      - cluster.name=soc-es-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=false
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-elastic_secure_password}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - soc-es-data:/usr/share/elasticsearch/data
+    ports:
+      - "${ELASTIC_PORT:-9200}:9200"
+    networks:
+      - soc-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -u elastic:${ELASTIC_PASSWORD:-elastic_secure_password} http://localhost:9200/_cluster/health | grep -qv '\"status\":\"red\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # SOC Backend (Node.js / Express / Prisma)
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: soc-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${SOC_DB_USER:-soc_user}:${SOC_DB_PASSWORD:-soc_password}@postgres:5432/${SOC_DB_NAME:-soc_db}
+      JWT_SECRET: ${JWT_SECRET:-change_this_in_production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      ELASTIC_URL: http://elasticsearch:9200
+      ELASTIC_INDEX: ${ELASTIC_INDEX:-wazuh-alerts-*}
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME:-elastic}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-elastic_secure_password}
+      AI_SERVICE_URL: http://soc-ai:8000
+      SOAR_SERVICE_URL: http://soc-soar:8001
+      CORRELATION_BRUTE_FORCE_THRESHOLD: ${CORRELATION_BRUTE_FORCE_THRESHOLD:-5}
+      CORRELATION_BRUTE_FORCE_WINDOW_MIN: ${CORRELATION_BRUTE_FORCE_WINDOW_MIN:-10}
+      CORRELATION_TRAFFIC_SPIKE_THRESHOLD: ${CORRELATION_TRAFFIC_SPIKE_THRESHOLD:-500}
+      CORRELATION_TRAFFIC_SPIKE_WINDOW_MIN: ${CORRELATION_TRAFFIC_SPIKE_WINDOW_MIN:-5}
+    networks:
+      - soc-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # SOC Frontend (React / Vite → Nginx)
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: soc-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - soc-app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # SOC AI Anomaly Detection (Python FastAPI)
+  # ─────────────────────────────────────────
+  soc-ai:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: soc-ai
+    restart: unless-stopped
+    environment:
+      BASELINE_LOGIN_MEAN: ${BASELINE_LOGIN_MEAN:-2}
+      BASELINE_LOGIN_STD: ${BASELINE_LOGIN_STD:-1.5}
+      BASELINE_CPU_MEAN: ${BASELINE_CPU_MEAN:-40}
+      BASELINE_CPU_STD: ${BASELINE_CPU_STD:-20}
+      BASELINE_TRAFFIC_MEAN: ${BASELINE_TRAFFIC_MEAN:-100}
+      BASELINE_TRAFFIC_STD: ${BASELINE_TRAFFIC_STD:-50}
+      ANOMALY_SIGMA_THRESHOLD: ${ANOMALY_SIGMA_THRESHOLD:-2.0}
+    networks:
+      - soc-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # SOC SOAR – Playbook Automation (Python FastAPI)
+  # ─────────────────────────────────────────
+  soc-soar:
+    build:
+      context: ./soar-service
+      dockerfile: Dockerfile
+    container_name: soc-soar
+    restart: unless-stopped
+    environment:
+      SOAR_DB_PATH: /data/soar.db
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-soc-soar@yourdomain.com}
+      ALERT_RECIPIENTS: ${ALERT_RECIPIENTS:-security-team@yourdomain.com}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - soc-soar-data:/data
+    networks:
+      - soc-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Nginx – Reverse Proxy (public entry point)
+  # ─────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: soc-nginx
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+      - soc-ai
+      - soc-soar
+    ports:
+      - "${APP_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - soc-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

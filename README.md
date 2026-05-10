@@ -237,6 +237,7 @@ See outputs for public IP and dashboard URLs.
 | [SETUP_GUIDE.md](docs/SETUP_GUIDE.md) | Step-by-step deployment guide |
 | [RUNBOOKS.md](docs/RUNBOOKS.md) | Daily operations and incident response |
 | [API_INTEGRATION.md](docs/API_INTEGRATION.md) | REST API reference for all components |
+| [POC_APPLICATION_DOCUMENT.md](docs/POC_APPLICATION_DOCUMENT.md) | Consolidated proof-of-concept overview of the full application |
 
 ---
 
